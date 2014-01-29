@@ -44,7 +44,13 @@ module ActionView
     module Accessors #:nodoc:
     end
 
-    register_detail(:locale)  { [I18n.locale, I18n.default_locale].uniq }
+    register_detail(:locale) do
+      locales = [I18n.locale]
+      locales.concat(I18n.fallbacks[I18n.locale]) if I18n.respond_to? :fallbacks
+      locales << I18n.default_locale
+      locales.uniq!
+      locales
+    end
     register_detail(:formats) { Mime::SET.symbols }
     register_detail(:handlers){ Template::Handlers.extensions }
 
@@ -56,6 +62,13 @@ module ActionView
       @details_keys = Hash.new
 
       def self.get(details)
+        if details[:formats]
+          details = details.dup
+          syms    = Set.new Mime::SET.symbols
+          details[:formats] = details[:formats].select { |v|
+            syms.include? v
+          }
+        end
         @details_keys[details] ||= new
       end
 
