@@ -163,7 +163,7 @@ module ActiveRecord
           check_schema_file(file)
           load(file)
         when :sql
-          file ||= File.join(db_dir, "structure.sql")
+          file ||= File.join(db_dir, "schema.sql")
           check_schema_file(file)
           structure_load(current_config, file)
         else
