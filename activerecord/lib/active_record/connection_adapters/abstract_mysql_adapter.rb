@@ -202,6 +202,8 @@ module ActiveRecord
         if value.kind_of?(String) && column && column.type == :binary && column.class.respond_to?(:string_to_binary)
           s = column.class.string_to_binary(value).unpack("H*")[0]
           "x'#{s}'"
+        elsif value.kind_of?(BigDecimal)
+          value.to_s("F")
         else
           super
         end
@@ -289,14 +291,10 @@ module ActiveRecord
 
       def rollback_to_savepoint
         execute("ROLLBACK TO SAVEPOINT #{current_savepoint_name}")
-      rescue => ex
-        STDERR.puts("ROLLBACK TO SAVEPOINT failed with #{ex}\n#{caller.join("\n")}\n+++++++++++")
       end
 
       def release_savepoint
         execute("RELEASE SAVEPOINT #{current_savepoint_name}")
-      rescue => ex
-        STDERR.puts("RELEASE SAVEPOINT failed with #{ex}\n#{caller.join("\n")}\n+++++++++++")
       end
 
       # In the simple case, MySQL allows us to place JOINs directly into the UPDATE
