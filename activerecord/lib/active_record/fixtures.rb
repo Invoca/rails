@@ -879,11 +879,7 @@ module ActiveRecord
     end
 
     def create_fixtures_from_yaml
-      #TODO - jpt - HACK: We destroy the triggers to allow fixtures to load and recreate them afterwards.
-      ApplicationModel.drop_triggers!
       fixtures = Fixtures.create_fixtures(fixture_path, fixture_table_names, fixture_class_names)
-      ApplicationModel.recreate_triggers!
-
       Hash[fixtures.map { |f| [f.name, f] }]
     end
 
