@@ -86,6 +86,11 @@ module ActiveRecord
 
         # Deletes the records according to the <tt>:dependent</tt> option.
         def delete_records(records, method)
+
+          if method == :destroy && reflection.klass._destroy_callbacks.empty?
+            method = :delete_all
+          end
+
           if method == :destroy
             records.each { |r| r.destroy }
             update_counter(-records.length) unless inverse_updates_counter_cache?
