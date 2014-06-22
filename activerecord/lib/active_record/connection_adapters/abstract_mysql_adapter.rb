@@ -334,6 +334,15 @@ module ActiveRecord
         }.join
       end
 
+      def trigger_dump
+        triggers = ApplicationModel.connection.select_all("show triggers").map do |row|
+          ApplicationModel.connection.select_one("show create trigger #{row['Trigger']}")['SQL Original Statement'].sub(/ DEFINER.*TRIGGER/, ' TRIGGER') +
+            "\n//"
+        end
+
+        "DELIMITER //\n#{triggers.join("\n")}\nDELIMITER ;\n"
+      end
+
       # Drops the database specified on the +name+ attribute
       # and creates it again using the provided +options+.
       def recreate_database(name, options = {})

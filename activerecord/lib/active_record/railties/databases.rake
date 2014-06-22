@@ -450,6 +450,7 @@ EOS
         File.open(filename, "w+") do |f|
           f << MYSQL_DUMP_HEADER
           f << ActiveRecord::Base.connection.structure_dump.gsub(/AUTO_INCREMENT=\d+ /,'')
+          f << ActiveRecord::Base.connection.trigger_dump
           f << MYSQL_DUMP_FOOTER
         end
         #File.open(filename, "w:utf-8") { |f| f << ActiveRecord::Base.connection.structure_dump }
