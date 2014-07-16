@@ -1,6 +1,39 @@
 # Don't put *.swp, *.bak, etc here; those belong in a global ~/.gitignore.
 # Check out https://help.github.com/articles/ignoring-files for how to set that up.
 
+#IDEs and Editors
+.idea
+atlassian-ide-plugin.xml
+.project
+.redcar
+nbproject
+tags
+*.swp
+*.swo
+*~
+*.sass-cache
+coverage
+coverage.data
+coverage.info
+.buildpath
+.settings
+.loadpath
+.autotest
+dir_conflicts.prej
+partial_dependencies.png
+rr.tmproj
+
+#Ruby Version Managers
+.rvmrc
+.rbenv-version
+.ruby-version
+.ruby-gemset
+.bundle
+
+#OS X
+.DS_Store
+
+#Ignored app paths
 debug.log
 .Gemfile
 /.bundle
