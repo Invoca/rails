@@ -222,7 +222,11 @@ module ActiveRecord
       end
 
       if group_values.any?
-        execute_grouped_calculation(operation, column_name, distinct)
+        if options[:simple_count] ## RR patch, if simple count option is present just return the count of records
+          execute_grouped_calculation(operation, column_name, distinct, true)
+        else
+          execute_grouped_calculation(operation, column_name, distinct)
+        end
       else
         execute_simple_calculation(operation, column_name, distinct)
       end
@@ -272,7 +276,7 @@ module ActiveRecord
       type_cast_calculated_value(value, column, operation)
     end
 
-    def execute_grouped_calculation(operation, column_name, distinct) #:nodoc:
+    def execute_grouped_calculation(operation, column_name, distinct, simple_count = false) #:nodoc:
       group_attrs = group_values
 
       if group_attrs.first.respond_to?(:to_sym)
@@ -318,7 +322,16 @@ module ActiveRecord
       relation.group_values  = group
       relation.select_values = select_values
 
-      calculated_data = @klass.connection.select_all(relation, nil, bind_values)
+      calculated_data = nil
+
+      if simple_count # RR patch
+        # remove "order by" clauses which cause issues with complicated scopes and it's irrelevant for the records count
+        relation.order_values = []
+        calculated_data = @klass.connection.select_all(relation, nil, bind_values)
+        return calculated_data.count
+      end
+
+      calculated_data ||= @klass.connection.select_all(relation, nil, bind_values)
 
       if association
         key_ids     = calculated_data.collect { |row| row[group_aliases.first] }
