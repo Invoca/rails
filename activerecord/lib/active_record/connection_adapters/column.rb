@@ -64,6 +64,7 @@ module ActiveRecord
         when :date                        then Date
         when :text, :string, :binary      then String
         when :boolean                     then Object
+        when :varbinary                   then String # RingRevenue patch
         end
       end
 
@@ -104,6 +105,7 @@ module ActiveRecord
         when :date                 then klass.value_to_date(value)
         when :binary               then klass.binary_to_string(value)
         when :boolean              then klass.value_to_boolean(value)
+        when :varbinary            then klass.binary_to_string(value)
         else value
         end
       end
@@ -172,6 +174,8 @@ module ActiveRecord
           case value
           when TrueClass, FalseClass
             value ? 1 : 0
+          when ActiveSupport::OrderedHash #RR patch
+            value.size
           else
             value.to_i rescue nil
           end
@@ -279,6 +283,8 @@ module ActiveRecord
             :date
           when /clob/i, /text/i
             :text
+          when /varbinary/i # RingRevenue patch
+            :varbinary
           when /blob/i, /binary/i
             :binary
           when /char/i
