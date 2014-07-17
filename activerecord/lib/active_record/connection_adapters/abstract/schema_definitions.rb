@@ -227,7 +227,8 @@ module ActiveRecord
         @columns_hash.delete name.to_s
       end
 
-      [:string, :text, :integer, :float, :decimal, :datetime, :timestamp, :time, :date, :binary, :boolean].each do |column_type|
+      # RingRevenue patch - added 'varbinary'
+      [:string, :text, :integer, :float, :decimal, :datetime, :timestamp, :time, :date, :binary, :boolean, :varbinary].each do |column_type|
         define_method column_type do |*args|
           options = args.extract_options!
           column_names = args
