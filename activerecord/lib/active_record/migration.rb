@@ -338,28 +338,6 @@ module ActiveRecord
       new.migrate direction
     end
 
-    def self.add_foreign_key(parent, child, cascade = false, foreign_key = parent.to_s.singularize + '_id')
-      constraint_name = "#{child.to_s}_#{foreign_key}"
-      # If an index does not exist one is created with the same name as the constraint.
-      execute "ALTER TABLE #{child} ADD CONSTRAINT #{constraint_name} FOREIGN KEY #{constraint_name}(#{foreign_key}) REFERENCES #{parent}(id)" + (cascade ? " ON DELETE CASCADE" : "")
-    end
-
-    def self.remove_foreign_key(parent,child,remove_index=false )
-      constraint_name = "#{child.to_s}_#{parent.to_s.singularize}_id"
-      execute "ALTER TABLE #{child} DROP FOREIGN KEY #{constraint_name}"
-      remove_index child, :name=> constraint_name if remove_index
-    end
-
-    def self.drop_foreign_key(child,fk_name)
-      execute "ALTER TABLE #{child} DROP FOREIGN KEY #{fk_name}"
-      #remove_index child, :name => fk_name
-    end
-
-    def self.write(text="")
-      puts(text) if verbose
-      $stdout.flush # This is new - flush the output so we can follow along when the migration is run in the background.
-    end
-
     cattr_accessor :verbose
 
     attr_accessor :name, :version
