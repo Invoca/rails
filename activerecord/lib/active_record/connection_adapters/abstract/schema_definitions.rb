@@ -39,6 +39,21 @@ module ActiveRecord
         end
     end
 
+
+    module ClassColumn
+      def class_column( symbol, prefix )
+        klass = symbol.to_s.classify.constantize
+        #AR models do respond to a different columns method, but we only want to handle non-persistent classes
+        if klass.respond_to?(:columns) && !klass.ancestors.include?(ActiveRecord::Base)
+          klass.columns(prefix).each do |col_def|
+            column *col_def
+          end
+          return true
+        end
+      end
+    end
+
+
     # Represents the schema of an SQL table in an abstract way. This class
     # provides methods for manipulating the schema representation.
     #
@@ -334,18 +349,7 @@ module ActiveRecord
     #     t.remove_timestamps
     #   end
     #
-    module ClassColumn
-      def class_column( symbol, prefix )
-        klass = symbol.to_s.classify.constantize
-        #AR models do respond to a different columns method, but we only want to handle non-persistent classes
-        if klass.respond_to?(:columns) && !klass.ancestors.include?(ActiveRecord::Base)
-          klass.columns(prefix).each do |col_def|
-            column *col_def
-          end
-          return true
-        end
-      end
-    end
+
 
 
     class Table
