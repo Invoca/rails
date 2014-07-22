@@ -329,6 +329,18 @@ module ActiveRecord
         @base = base
       end
 
+      include ClassColumn
+
+      def change_column_null( column_name, null, default = nil )
+        @base.change_column_null(@table_name, column_name, null, default)
+      end
+
+      def method_missing(symbol, *args)
+        unless class_column(symbol, args[0])
+          super
+        end
+      end
+
       # Adds a new column to the named table.
       # See TableDefinition#column for details of the options you can use.
       # ===== Example
