@@ -75,17 +75,6 @@ module ActiveRecord
     # The table definitions
     # The Columns are stored as a ColumnDefinition in the +columns+ attribute.
     class TableDefinition
-      include ClassColumn
-
-      def method_missing(symbol, *args)
-        if symbol.to_s == 'xml'
-          return xml_column_fallback(args)
-        end
-        unless class_column(symbol, args[0])
-          super
-        end
-      end
-
       # An array of ColumnDefinition objects, representing the column changes
       # that have been defined.
       attr_accessor :columns
@@ -314,6 +303,17 @@ module ActiveRecord
 
       def native
         @base.native_database_types
+      end
+
+      include ClassColumn
+
+      def method_missing(symbol, *args)
+        if symbol.to_s == 'xml'
+          return xml_column_fallback(args)
+        end
+        unless class_column(symbol, args[0])
+          super
+        end
       end
     end
 
