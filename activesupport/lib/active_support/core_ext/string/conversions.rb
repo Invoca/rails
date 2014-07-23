@@ -33,9 +33,11 @@ class String
   alias_method :getbyte, :[] unless method_defined?(:getbyte)
 
   # Form can be either :utc (default) or :local.
+  #
   def to_time(form = :utc)
     return nil if self.blank?
     d = ::Date._parse(self, false).values_at(:year, :mon, :mday, :hour, :min, :sec, :sec_fraction, :offset).map { |arg| arg || 0 }
+    enforce_reasonable_year(d[0])
     d[6] *= 1000000
     ::Time.send("#{form}_time", *d[0..6]) - d[7]
   end
@@ -48,7 +50,9 @@ class String
   #   "12/13/2012".to_date #=> ArgumentError: invalid date
   def to_date
     return nil if self.blank?
-    ::Date.new(*::Date._parse(self, false).values_at(:year, :mon, :mday))
+    d = ::Date.new(*::Date._parse(self, false).values_at(:year, :mon, :mday))
+    enforce_reasonable_year(d.year)
+    d
   end
 
   # Converts a string to a DateTime value.
@@ -61,6 +65,19 @@ class String
     return nil if self.blank?
     d = ::Date._parse(self, false).values_at(:year, :mon, :mday, :hour, :min, :sec, :zone, :sec_fraction).map { |arg| arg || 0 }
     d[5] += d.pop
+    enforce_reasonable_year(d[0])
     ::DateTime.civil(*d)
+  end
+
+  def strip_tags
+    ActionController::Base.helpers.strip_tags(self)
+  end
+
+  private
+
+  # As per dev discussion, making the assumption that an attempt to convert to a year before 1970 is a mistake.
+  #
+  def enforce_reasonable_year(year)
+    year >= 1970 or raise ArgumentError, "You are attempting to convert a String to a Date or Time related object but you passed year #{year}, which will result in a DateTime object, and possible conversion to LMT time."
   end
 end
