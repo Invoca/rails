@@ -244,6 +244,27 @@ module ActionDispatch
       mattr_accessor :always_write_cookie
       self.always_write_cookie = false
 
+      alias :element_assignment []= unless method_defined? :element_assignment
+
+      def []=(key, options)
+        if options.is_a?(Hash)
+          options.symbolize_keys!
+        else
+          options = { :value => options }
+      end
+        options.has_key?(:domain) or options[:domain] = COOKIE_DOMAIN
+        element_assignment( key, options )
+      end
+
+      def delete_with_default_domain key, options = {}
+        options.symbolize_keys!
+        options.has_key?(:domain) or options[:domain] = COOKIE_DOMAIN
+        delete_without_default_domain(key, options)
+      end
+
+      alias_method_chain :delete, :default_domain
+
+
       private
 
         def write_cookie?(cookie)
