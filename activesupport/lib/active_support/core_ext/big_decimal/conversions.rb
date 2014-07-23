@@ -42,4 +42,9 @@ class BigDecimal
   end
   alias_method :_original_to_s, :to_s
   alias_method :to_s, :to_formatted_s
+
+  def ==(other)
+      other = BigDecimal(other.to_s) if other.kind_of?(Float)
+      return super(other)
+  end
 end
