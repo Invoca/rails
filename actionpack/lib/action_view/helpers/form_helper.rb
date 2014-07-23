@@ -361,13 +361,13 @@ module ActionView
         options[:html] ||= {}
 
         case record
-        when String, Symbol
-          object_name = record
-          object      = nil
-        else
-          object      = record.is_a?(Array) ? record.last : record
-          object_name = options[:as] || ActiveModel::Naming.param_key(object)
-          apply_form_for_options!(record, options)
+          when String, Symbol
+            object_name = record
+            object      = nil
+          else
+            object      = record.is_a?(Array) ? record.last : record
+            object_name = options[:as] || ActiveModel::Naming.param_key(object)
+            apply_form_for_options!(record, options)
         end
 
         options[:html][:remote] = options.delete(:remote) if options.has_key?(:remote)
@@ -375,7 +375,14 @@ module ActionView
         options[:html][:authenticity_token] = options.delete(:authenticity_token)
 
         builder = options[:parent_builder] = instantiate_builder(object_name, object, options, &block)
-        output  = capture(builder, &block)
+        ### changed lines below ###
+        output =
+            if builder.respond_to?(:replace_content)
+              builder.replace_content( capture(builder, &block) )
+            else
+              capture(builder, &block)
+            end
+        ### end change ###
         default_options = builder.multipart? ? { :multipart => true } : {}
         form_tag(options.delete(:url) || {}, default_options.merge!(options.delete(:html))) { output }
       end
@@ -602,7 +609,14 @@ module ActionView
       #   <% end %>
       def fields_for(record_name, record_object = nil, options = {}, &block)
         builder = instantiate_builder(record_name, record_object, options, &block)
-        output = capture(builder, &block)
+        ### changed lines below ###
+        output =
+          if builder.respond_to?(:replace_content)
+            concat builder.replace_content( capture(builder, &block) )
+          else
+            capture(builder, &block)
+          end
+        ### end change ###
         output.concat builder.hidden_field(:id) if output && options[:hidden_field_id] && !builder.emitted_hidden_id?
         output
       end
