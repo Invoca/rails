@@ -26,4 +26,9 @@ class Array
       {}
     end
   end
+
+  # Extracts options from a set of arguments without updating the arguments
+  def extract_options
+    last.is_a?(::Hash) ? last : {}
+  end
 end
