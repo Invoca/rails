@@ -507,7 +507,16 @@ module ActiveRecord
     end
 
     class Table
-      include ClassColumn
+      def class_column( symbol, prefix )
+        klass = symbol.to_s.classify.constantize
+        #AR models do respond to a different columns method, but we only want to handle non-persistent classes
+        if klass.respond_to?(:columns) && !klass.ancestors.include?(ActiveRecord::Base)
+          klass.columns(prefix).each do |col_def|
+            column *col_def
+          end
+          return true
+        end
+      end
 
       def change_column_null( column_name, null, default = nil )
         @base.change_column_null(@table_name, column_name, null, default)
