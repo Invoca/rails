@@ -565,21 +565,14 @@ module ActiveRecord
 
   class Migrator#:nodoc:
 
-    def self.db_configuration
-      result = ActiveRecord::Base.configurations[Rails.env + "_migration"] || ActiveRecord::Base.configurations[Rails.env]
-      result
-    end
-
-    def initialize(direction, migrations_paths, target_version = nil)
-      ActiveRecord::Base.establish_connection(self.class.db_configuration)
-      raise StandardError.new("This database does not yet support migrations") unless Base.connection.supports_migrations?
-      Base.connection.initialize_schema_migrations_table
-      @direction, @migrations_paths, @target_version = direction, migrations_paths, target_version
-    end
-
     class << self
       attr_writer :migrations_paths
       alias :migrations_path= :migrations_paths=
+
+      def db_configuration
+        result = ActiveRecord::Base.configurations[Rails.env + "_migration"] || ActiveRecord::Base.configurations[Rails.env]
+        result
+      end
 
       def migrate(migrations_paths, target_version = nil, &block)
         case
@@ -695,6 +688,7 @@ module ActiveRecord
     end
 
     def initialize(direction, migrations_paths, target_version = nil)
+      ActiveRecord::Base.establish_connection(self.class.db_configuration)
       raise StandardError.new("This database does not yet support migrations") unless Base.connection.supports_migrations?
       Base.connection.initialize_schema_migrations_table
       @direction, @migrations_paths, @target_version = direction, migrations_paths, target_version
