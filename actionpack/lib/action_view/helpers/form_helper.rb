@@ -1422,6 +1422,12 @@ module ActionView
         @emitted_hidden_id ||= nil
       end
 
+      # => this method was ported from Rails 2.3.8;
+      # => we can remove it if we decide to use a gem for better customization or we can just customize this one to serve our needs
+      def error_messages(options = {})
+        @template.error_messages_for(@object_name, objectify_options(options))
+      end
+
       private
         def objectify_options(options)
           @default_options.merge(options.merge(:object => @object))
