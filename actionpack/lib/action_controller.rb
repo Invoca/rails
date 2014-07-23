@@ -8,7 +8,7 @@ module ActionController
   autoload :Caching
   autoload :Metal
   autoload :Middleware
-  autoload :Failsafe
+  # autoload :Failsafe
 
   autoload_under "metal" do
     autoload :Compatibility
