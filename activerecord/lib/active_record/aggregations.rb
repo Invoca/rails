@@ -245,7 +245,8 @@ module ActiveRecord
                   class_name.constantize.send(converter, part)
               end
 
-              mapping.each { |pair| self[pair.first] = part.send(pair.last) }
+              # changed the line below to allow for part to be nil after resassignment in the unless block above
+              mapping.each { |pair| self[pair.first] = part.nil? ? nil : part.send(pair.last) }
               @aggregation_cache[name] = part.freeze
             end
           end
