@@ -269,12 +269,6 @@ module ActionDispatch
       hash
     end
 
-    protected
-
-    def parse_query(qs)
-      deep_munge(super)
-    end
-
     attr_accessor :do_not_strip_string_parameters
 
     def parameters
@@ -284,6 +278,12 @@ module ActionDispatch
         strip_string_params!(params)
         params.update(path_parameters).with_indifferent_access
       end
+    end
+
+    protected
+
+    def parse_query(qs)
+      deep_munge(super)
     end
 
     private
@@ -298,8 +298,6 @@ module ActionDispatch
         value_to_strip.each{ |value| strip_string_params!(value) }
       end
     end
-
-    private
 
     def check_method(name)
       HTTP_METHOD_LOOKUP[name] || raise(ActionController::UnknownHttpMethod, "#{name}, accepted HTTP methods are #{HTTP_METHODS.to_sentence(:locale => :en)}")
