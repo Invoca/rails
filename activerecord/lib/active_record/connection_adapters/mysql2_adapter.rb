@@ -21,6 +21,7 @@ module ActiveRecord
 
   module ConnectionAdapters
     class Mysql2Adapter < AbstractMysqlAdapter
+      attr_reader :config
 
       class Column < AbstractMysqlAdapter::Column # :nodoc:
         def adapter

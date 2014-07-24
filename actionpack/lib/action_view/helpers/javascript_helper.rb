@@ -105,6 +105,19 @@ module ActionView
 
         content_tag(:a, name, html_options.merge(:href => href, :onclick => onclick))
       end
+      # Bogdan - want to make sure the the single quotes are not escaped in the javascript functions when rendered by Rails
+      def link_to_function(name, function, html_options={})
+        onclick = "#{"#{html_options[:onclick]}; " if html_options[:onclick]}#{function}; return false;".html_safe
+        href = html_options[:href] || '#'
+
+        content_tag(:a, name, html_options.merge(:href => href, :onclick => onclick))
+      end
+
+      def button_to_function(name, function=nil, html_options={})
+        onclick = "#{"#{html_options[:onclick]}; " if html_options[:onclick]}#{function};".html_safe
+
+        tag(:input, html_options.merge(:type => 'button', :value => name, :onclick => onclick))
+      end
     end
   end
 end
