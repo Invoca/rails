@@ -361,13 +361,13 @@ module ActionView
         options[:html] ||= {}
 
         case record
-          when String, Symbol
-            object_name = record
-            object      = nil
-          else
-            object      = record.is_a?(Array) ? record.last : record
-            object_name = options[:as] || ActiveModel::Naming.param_key(object)
-            apply_form_for_options!(record, options)
+        when String, Symbol
+          object_name = record
+          object      = nil
+        else
+          object      = record.is_a?(Array) ? record.last : record
+          object_name = options[:as] || ActiveModel::Naming.param_key(object)
+          apply_form_for_options!(record, options)
         end
 
         options[:html][:remote] = options.delete(:remote) if options.has_key?(:remote)
