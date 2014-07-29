@@ -269,17 +269,6 @@ module ActionDispatch
       hash
     end
 
-    attr_accessor :do_not_strip_string_parameters
-
-    def parameters
-      @parameters ||= begin
-        @do_not_strip_string_parameters ||= []
-        params = request_parameters.merge(query_parameters)
-        strip_string_params!(params)
-        params.update(path_parameters).with_indifferent_access
-      end
-    end
-
     protected
 
     def parse_query(qs)
@@ -287,17 +276,6 @@ module ActionDispatch
     end
 
     private
-
-    def strip_string_params!(value_to_strip)
-      case value_to_strip
-      when String
-        value_to_strip.strip!
-      when Hash
-        value_to_strip.each{ |key, value| strip_string_params!(value) if !key.respond_to?(:to_sym) || key.to_sym.not_in?(do_not_strip_string_parameters) }
-      when Array
-        value_to_strip.each{ |value| strip_string_params!(value) }
-      end
-    end
 
     def check_method(name)
       HTTP_METHOD_LOOKUP[name] || raise(ActionController::UnknownHttpMethod, "#{name}, accepted HTTP methods are #{HTTP_METHODS.to_sentence(:locale => :en)}")

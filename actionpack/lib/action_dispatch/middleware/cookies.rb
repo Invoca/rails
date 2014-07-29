@@ -251,7 +251,7 @@ module ActionDispatch
           options.symbolize_keys!
         else
           options = { :value => options }
-      end
+        end
         options.has_key?(:domain) or options[:domain] = COOKIE_DOMAIN
         element_assignment( key, options )
       end
