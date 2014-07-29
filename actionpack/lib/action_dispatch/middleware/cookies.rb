@@ -173,7 +173,7 @@ module ActionDispatch
         element_assignment( key, options )
       end
 
-      def delete_with_default_domain key, options = {}
+      def delete_with_default_domain(key, options = {})
         options.symbolize_keys!
         options.has_key?(:domain) or options[:domain] = COOKIE_DOMAIN
         delete_without_default_domain(key, options)
