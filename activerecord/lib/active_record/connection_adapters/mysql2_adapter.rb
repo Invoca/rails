@@ -210,23 +210,13 @@ module ActiveRecord
 
       # Executes the SQL statement in the context of this connection.
       def execute(sql, name = nil)
-        # make sure we carry over any changes to ActiveRecord::Base.default_timezone that have been
-        # made since we established the connection
-        @connection.query_options[:database_timezone] = ActiveRecord::Base.default_timezone
-        if name == :skip_logging
-          @connection.query(sql)
-        else
-          log(sql, name) { @connection.query(sql) }
+        if @connection
+          # make sure we carry over any changes to ActiveRecord::Base.default_timezone that have been
+          # made since we established the connection
+          @connection.query_options[:database_timezone] = ActiveRecord::Base.default_timezone
         end
-      rescue ActiveRecord::StatementInvalid => exception
-        ExceptionHandling.ensure_safe "canceling query for thread id #{@connection.thread_id} - query may still be running" do
-          unless active?
-            old_thread_id = @connection.thread_id
-            reconnect!
-            kill(old_thread_id)
-          end
-        end
-        raise
+
+        super
       end
 
       def exec_query(sql, name = 'SQL', binds = [])
