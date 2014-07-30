@@ -324,7 +324,6 @@ module ActiveRecord
   # For a list of commands that are reversible, please see
   # <tt>ActiveRecord::Migration::CommandRecorder</tt>.
   class Migration
-
     def self.add_foreign_key(parent, child, cascade = false, foreign_key = parent.to_s.singularize + '_id')
       constraint_name = "#{child.to_s}_#{foreign_key}"
       # If an index does not exist one is created with the same name as the constraint.

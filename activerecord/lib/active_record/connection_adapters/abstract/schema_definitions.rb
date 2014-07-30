@@ -39,7 +39,6 @@ module ActiveRecord
         end
     end
 
-
     module ClassColumn
       def class_column( symbol, prefix )
         klass = symbol.to_s.classify.constantize
@@ -349,9 +348,6 @@ module ActiveRecord
     #     t.remove_timestamps
     #   end
     #
-
-
-
     class Table
       include ClassColumn
 
