@@ -564,7 +564,6 @@ module ActiveRecord
   end
 
   class Migrator#:nodoc:
-
     class << self
       attr_writer :migrations_paths
       alias :migrations_path= :migrations_paths=
