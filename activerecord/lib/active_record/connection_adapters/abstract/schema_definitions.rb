@@ -52,7 +52,6 @@ module ActiveRecord
       end
     end
 
-
     # Represents the schema of an SQL table in an abstract way. This class
     # provides methods for manipulating the schema representation.
     #
