@@ -54,7 +54,6 @@ module ActionDispatch
         end
 
         params.each do |k, v|
-          k.force_encoding("UTF-8").encode!
           case v
           when Hash
             encode_params(v)
