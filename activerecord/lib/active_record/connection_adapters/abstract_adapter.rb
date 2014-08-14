@@ -61,7 +61,7 @@ module ActiveRecord
         super()
 
         @active              = nil
-        connection           = connection
+        self.connection      = connection
         @in_use              = false
         @instrumenter        = ActiveSupport::Notifications.instrumenter
         @last_use            = false
@@ -83,7 +83,7 @@ module ActiveRecord
       end
 
       def non_nil_connection
-        @connection or raise "Connection is nil! It was assigned by:\n#{@connection_set_caller.join("\n")}"
+        @connection or raise "Connection is nil! It was assigned by:\n#{(@connection_set_caller || ['<none>']).join("\n")}"
       end
 
       public

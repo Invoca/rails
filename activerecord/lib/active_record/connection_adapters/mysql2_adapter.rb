@@ -83,7 +83,7 @@ module ActiveRecord
       def disconnect!
         unless @connection.nil?
           @connection.close
-          connection = nil
+          self.connection = nil
         end
       end
 
@@ -249,7 +249,7 @@ module ActiveRecord
       private
 
       def connect
-        connection = Mysql2::Client.new(@config)
+        self.connection = Mysql2::Client.new(@config)
         configure_connection
       end
 
