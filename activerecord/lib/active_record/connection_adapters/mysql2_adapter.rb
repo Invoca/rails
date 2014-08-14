@@ -203,11 +203,6 @@ module ActiveRecord
         execute(sql, name).to_a
       end
 
-      #used for stubbing
-      def kill(thread_id)
-        @connection.query("KILL #{thread_id}")
-      end
-
       # Executes the SQL statement in the context of this connection.
       def execute(sql, name = nil)
         if @connection
