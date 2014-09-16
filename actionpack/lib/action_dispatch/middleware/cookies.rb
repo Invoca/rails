@@ -159,27 +159,28 @@ module ActionDispatch
         end
       end
 
+      alias :element_assignment []= unless method_defined? :element_assignment
+
       # Sets the cookie named +name+. The second argument may be the very cookie
       # value, or a hash of options as documented above.
       def []=(key, options)
         if options.is_a?(Hash)
           options.symbolize_keys!
-          value = options[:value]
         else
-          value = options
-          options = { :value => value }
+          options = { :value => options }
         end
-
-        handle_options(options)
-
-        if @cookies[key.to_s] != value or options[:expires]
-          @cookies[key.to_s] = value
-          @set_cookies[key.to_s] = options
-          @delete_cookies.delete(key.to_s)
-        end
-
-        value
+        options.has_key?(:domain) or options[:domain] = COOKIE_DOMAIN
+        element_assignment( key, options )
       end
+
+      def delete_with_default_domain(key, options = {})
+        options.symbolize_keys!
+        options.has_key?(:domain) or options[:domain] = COOKIE_DOMAIN
+        delete_without_default_domain(key, options)
+      end
+
+      alias_method_chain :delete, :default_domain
+
 
       # Removes the cookie on the client machine by setting the value to an empty string
       # and setting its expiration date into the past. Like <tt>[]=</tt>, you can pass in
