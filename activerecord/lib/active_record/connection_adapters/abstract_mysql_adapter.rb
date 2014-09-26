@@ -243,9 +243,9 @@ module ActiveRecord
       # Executes the SQL statement in the context of this connection.
       def execute(sql, name = nil)
         if name == :skip_logging
-          @connection.query(sql)
+          non_nil_connection.query(sql)
         else
-          log(sql, name) { @connection.query(sql) }
+          log(sql, name) { non_nil_connection.query(sql) }
         end
       rescue ActiveRecord::StatementInvalid => exception
         if exception.message.split(":").first =~ /Packets out of order/
@@ -264,7 +264,7 @@ module ActiveRecord
 
       def update_sql(sql, name = nil) #:nodoc:
         super
-        @connection.affected_rows
+        non_nil_connection.affected_rows
       end
 
       def begin_db_transaction
