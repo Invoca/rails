@@ -568,8 +568,7 @@ module ActiveRecord
       alias :migrations_path= :migrations_paths=
 
       def db_configuration
-        result = ActiveRecord::Base.configurations[Rails.env + "_migration"] || ActiveRecord::Base.configurations[Rails.env]
-        result
+        ActiveRecord::Base.configurations[Rails.env + "_migration"] || ActiveRecord::Base.configurations[Rails.env]
       end
 
       def migrate(migrations_paths, target_version = nil, &block)
