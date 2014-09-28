@@ -43,7 +43,7 @@ module ActionDispatch
       end
 
     private
-    
+
       def strip_string_params!(value_to_strip)
         case value_to_strip
         when String
