@@ -164,19 +164,21 @@ module ActionDispatch
       def []=(key, options)
         if options.is_a?(Hash)
           options.symbolize_keys!
+          value = options[:value]
         else
-          options = { :value => options }
+          value = options
+          options = { :value => value }
         end
-        options.has_key?(:domain) or options[:domain] = COOKIE_DOMAIN
-        element_assignment( key, options )
-      end
 
-      alias :element_assignment []= unless method_defined? :element_assignment
+        handle_options(options)
 
-      def delete_with_default_domain(key, options = {})
-        options.symbolize_keys!
-        options.has_key?(:domain) or options[:domain] = COOKIE_DOMAIN
-        delete_without_default_domain(key, options)
+        if @cookies[key.to_s] != value or options[:expires]
+          @cookies[key.to_s] = value
+          @set_cookies[key.to_s] = options
+          @delete_cookies.delete(key.to_s)
+        end
+
+        value
       end
 
       # Removes the cookie on the client machine by setting the value to an empty string
@@ -191,8 +193,6 @@ module ActionDispatch
         @delete_cookies[key.to_s] = options
         value
       end
-
-      alias_method_chain :delete, :default_domain
 
       # Removes all cookies on the client machine by calling <tt>delete</tt> for each cookie
       def clear(options = {})
