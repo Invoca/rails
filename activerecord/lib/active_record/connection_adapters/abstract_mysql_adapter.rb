@@ -61,10 +61,9 @@ module ActiveRecord
             when /tiny/i
               255
             when /medium/i
-              #16777215
-              5592405 # collation of utf8; RingRevenue patch
+              16777215
             when /long/i
-              2147483647 # mysql only allows 2^31-1, not 2^32-1, somewhat inconsistently with the tiny/medium/normal cases
+              4294967295
             else
               super # we could return 65535 here, but we leave it undecorated by default
             end
