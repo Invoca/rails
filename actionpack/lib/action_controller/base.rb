@@ -200,6 +200,22 @@ module ActionController
       MODULES - modules
     end
 
+    def self.do_not_strip_string_parameters
+      @do_not_strip_string_parameters
+    end
+
+    def self.strip_string_parameters options
+      options.assert_valid_keys([:except])
+      @do_not_strip_string_parameters = [options[:except]].compact.flatten
+    end
+
+    def process_with_strip_string_parameters(action, *args)
+      request.do_not_strip_string_parameters = self.class.do_not_strip_string_parameters
+      process_without_strip_string_parameters(action, *args)
+    end
+
+    alias_method_chain :process, :strip_string_parameters
+
     MODULES = [
       AbstractController::Rendering,
       AbstractController::Translation,

@@ -8,10 +8,13 @@ module ActionDispatch
       PARAMETERS_KEY = 'action_dispatch.request.path_parameters'
 
       # Returns both GET and POST \parameters in a single hash.
+      attr_accessor :do_not_strip_string_parameters
       def parameters
         @env["action_dispatch.request.parameters"] ||= begin
+          @do_not_strip_string_parameters ||= []
           params = begin
             request_parameters.merge(query_parameters)
+            strip_string_params!(params)
           rescue EOFError
             query_parameters.dup
           end
@@ -41,6 +44,17 @@ module ActionDispatch
       end
 
     private
+
+      def strip_string_params!(value_to_strip)
+        case value_to_strip
+          when String
+            value_to_strip.strip!
+          when Hash
+            value_to_strip.each{ |key, value| strip_string_params!(value) if !key.respond_to?(:to_sym) || key.to_sym.not_in?(do_not_strip_string_parameters) }
+          when Array
+            value_to_strip.each{ |value| strip_string_params!(value) }
+        end
+      end
 
       # Convert nested Hash to HashWithIndifferentAccess.
       #

@@ -441,7 +441,14 @@ module ActionView
         html_options[:authenticity_token] = options.delete(:authenticity_token)
 
         builder = instantiate_builder(object_name, object, options)
-        output  = capture(builder, &block)
+        ### changed lines below ###
+        output =
+            if builder.respond_to?(:replace_content)
+              builder.replace_content( capture(builder, &block) )
+            else
+              capture(builder, &block)
+            end
+        ### end change ###
         html_options[:multipart] ||= builder.multipart?
 
         html_options = html_options_for_form(options[:url] || {}, html_options)
@@ -711,7 +718,15 @@ module ActionView
       # to prevent fields_for from rendering it automatically.
       def fields_for(record_name, record_object = nil, options = {}, &block)
         builder = instantiate_builder(record_name, record_object, options)
-        capture(builder, &block)
+        ### changed lines below ###
+        output =
+            if builder.respond_to?(:replace_content)
+              concat builder.replace_content( capture(builder, &block) )
+            else
+              capture(builder, &block)
+            end
+        ### end change ###
+        output
       end
 
       # Returns a label tag tailored for labelling an input field for a specified attribute (identified by +method+) on an object
@@ -1192,6 +1207,12 @@ module ActionView
       # * Accepts same options as range_field_tag
       def range_field(object_name, method, options = {})
         Tags::RangeField.new(object_name, method, self, options).render
+      end
+
+      # => this method was ported from Rails 2.3.8;
+      # => we can remove it if we decide to use a gem for better customization or we can just customize this one to serve our needs
+      def error_messages(options = {})
+        @template.error_messages_for(@object_name, objectify_options(options))
       end
 
       private
