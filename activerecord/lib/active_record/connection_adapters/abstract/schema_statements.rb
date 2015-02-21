@@ -928,7 +928,8 @@ module ActiveRecord
         end
 
         def options_include_default?(options)
-          options.include?(:default) && !(options[:null] == false && options[:default].nil?)
+          # Invoca patch - allow DEFAULT NULL statements
+          options.include?(:default)# && !(options[:null] == false && options[:default].nil?)
         end
 
         def index_name_for_remove(table_name, options = {})

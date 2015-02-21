@@ -116,7 +116,7 @@ module ActionView
     end
 
     def url_options #:nodoc:
-      # RR patch - check whether controller is defined or not to make this work when url_for is overwritten in a non-controller class
+      # Invoca patch - check whether controller is defined or not to make this work when url_for is overwritten in a non-controller class
       if defined?(controller)
         if controller.respond_to?(:url_options)
           controller.url_options

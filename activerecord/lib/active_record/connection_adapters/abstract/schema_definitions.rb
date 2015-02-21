@@ -22,6 +22,19 @@ module ActiveRecord
       end
     end
 
+    module ClassColumn
+      def class_column( symbol, prefix )
+        klass = symbol.to_s.classify.constantize
+        #AR models do respond to a different columns method, but we only want to handle non-persistent classes
+        if klass.respond_to?(:columns) && !klass.ancestors.include?(ActiveRecord::Base)
+          klass.columns(prefix).each do |col_def|
+            column *col_def
+          end
+          return true
+        end
+      end
+    end
+
     class ChangeColumnDefinition < Struct.new(:column, :type, :options) #:nodoc:
     end
 
@@ -89,6 +102,17 @@ module ActiveRecord
     # The table definitions
     # The Columns are stored as a ColumnDefinition in the +columns+ attribute.
     class TableDefinition
+      include ClassColumn
+
+      def method_missing(symbol, *args)
+        if symbol.to_s == 'xml'
+          return xml_column_fallback(args)
+        end
+        unless class_column(symbol, args[0])
+          super
+        end
+      end
+
       include TimestampDefaultDeprecation
 
       # An array of ColumnDefinition objects, representing the column changes
@@ -270,7 +294,8 @@ module ActiveRecord
         @columns_hash.delete name.to_s
       end
 
-      [:string, :text, :integer, :bigint, :float, :decimal, :datetime, :timestamp, :time, :date, :binary, :boolean].each do |column_type|
+      # Invoca patch - added 'varbinary'
+      [:string, :text, :integer, :bigint, :float, :decimal, :datetime, :timestamp, :time, :date, :binary, :boolean, :varbinary].each do |column_type|
         define_method column_type do |*args|
           options = args.extract_options!
           column_names = args
@@ -414,6 +439,18 @@ module ActiveRecord
     #   end
     #
     class Table
+      include ClassColumn
+
+      def change_column_null( column_name, null, default = nil )
+        @base.change_column_null(@table_name, column_name, null, default)
+      end
+
+      def method_missing(symbol, *args)
+        unless class_column(symbol, args[0])
+          super
+        end
+      end
+
       attr_reader :name
 
       def initialize(table_name, base)

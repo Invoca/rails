@@ -8,14 +8,6 @@ end
 class LocalizedTemplatesTest < ActionController::TestCase
   tests LocalizedController
 
-  setup do
-    @old_locale = I18n.locale
-  end
-
-  teardown do
-    I18n.locale = @old_locale
-  end
-
   def test_localized_template_is_used
     I18n.locale = :de
     get :hello_world
