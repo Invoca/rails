@@ -116,6 +116,10 @@ module ActiveRecord
 
       # HELPER METHODS ===========================================
 
+      def create_table(table_name, options = {}) #:nodoc:
+        super(table_name, options.reverse_merge(:options => "ENGINE=InnoDB DEFAULT CHARSET=utf8"))
+      end
+
       def each_hash(result) # :nodoc:
         if block_given?
           result.each_hash do |row|

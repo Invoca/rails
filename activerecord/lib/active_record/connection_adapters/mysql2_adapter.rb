@@ -29,6 +29,7 @@ module ActiveRecord
 
   module ConnectionAdapters
     class Mysql2Adapter < AbstractMysqlAdapter
+      attr_reader :config
       ADAPTER_NAME = 'Mysql2'.freeze
 
       def initialize(connection, logger, connection_options, config)
@@ -71,7 +72,7 @@ module ActiveRecord
       #++
 
       def quote_string(string)
-        @connection.escape(string)
+        non_nil_connection.escape(string)
       end
 
       def quoted_date(value)
@@ -104,7 +105,7 @@ module ActiveRecord
         super
         unless @connection.nil?
           @connection.close
-          @connection = nil
+          self.connection = nil
         end
       end
 
@@ -240,7 +241,7 @@ module ActiveRecord
 
       def insert_sql(sql, name = nil, pk = nil, id_value = nil, sequence_name = nil)
         super
-        id_value || @connection.last_id
+        id_value || non_nil_connection.last_id
       end
       alias :create :insert_sql
 
@@ -250,28 +251,28 @@ module ActiveRecord
 
       def exec_delete(sql, name, binds)
         execute to_sql(sql, binds), name
-        @connection.affected_rows
+        non_nil_connection.affected_rows
       end
       alias :exec_update :exec_delete
 
       def last_inserted_id(result)
-        @connection.last_id
+        non_nil_connection.last_id
       end
 
       private
 
       def connect
-        @connection = Mysql2::Client.new(@config)
+        self.connection = Mysql2::Client.new(@config)
         configure_connection
       end
 
       def configure_connection
-        @connection.query_options.merge!(:as => :array)
+        non_nil_connection.query_options.merge!(:as => :array)
         super
       end
 
       def full_version
-        @full_version ||= @connection.info[:version]
+        @full_version ||= non_nil_connection.info[:version]
       end
 
       def set_field_encoding field_name

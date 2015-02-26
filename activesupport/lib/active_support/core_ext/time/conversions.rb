@@ -47,7 +47,8 @@ class Time
   #   Time::DATE_FORMATS[:short_ordinal]  = ->(time) { time.strftime("%B #{time.day.ordinalize}") }
   def to_formatted_s(format = :default)
     if formatter = DATE_FORMATS[format]
-      formatter.respond_to?(:call) ? formatter.call(self).to_s : strftime(formatter)
+      instance = format == :db && ActiveRecord::Base.default_timezone == :utc ? dup.utc : self # .utc mutates the original Time object!
+      formatter.respond_to?(:call) ? formatter.call(instance).to_s : instance.strftime(formatter)
     else
       to_default_s
     end

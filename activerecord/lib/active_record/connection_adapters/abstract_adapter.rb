@@ -101,7 +101,7 @@ module ActiveRecord
       def initialize(connection, logger = nil, pool = nil) #:nodoc:
         super()
 
-        @connection          = connection
+        self.connection      = connection
         @owner               = nil
         @instrumenter        = ActiveSupport::Notifications.instrumenter
         @logger              = logger
@@ -109,7 +109,21 @@ module ActiveRecord
         @schema_cache        = SchemaCache.new self
         @visitor             = nil
         @prepared_statements = false
+        @rows_read           = [] # Invoca patch
       end
+
+      protected
+
+      def connection=(new_connection)
+        @connection = new_connection
+        @connection_set_caller = caller
+      end
+
+      def non_nil_connection
+        @connection or raise "Connection is nil! It was assigned by:\n#{(@connection_set_caller || ['<none>']).join("\n")}"
+      end
+
+      public
 
       class BindCollector < Arel::Collectors::Bind
         def compile(bvs, conn)
@@ -200,6 +214,12 @@ module ActiveRecord
       # is called before each insert to set the record's primary key.
       def prefetch_primary_key?(table_name = nil)
         false
+      end
+
+      # Invoca patch
+      def reset_rows_read
+        rows_read, @rows_read = @rows_read, []
+        rows_read
       end
 
       # Does this adapter support index sort order?
@@ -461,11 +481,18 @@ module ActiveRecord
       def log(sql, name = "SQL", binds = [], statement_name = nil)
         @instrumenter.instrument(
           "sql.active_record",
-          :sql            => sql,
-          :name           => name,
-          :connection_id  => object_id,
-          :statement_name => statement_name,
-          :binds          => binds) { yield }
+            hash = {
+            :sql            => sql,
+            :name           => name,
+            :connection_id  => object_id,
+            :statement_name => statement_name,
+            :binds          => binds
+          }
+        ) do
+            yield.tap do |result|
+              hash[:rows] = result.count if result.respond_to?(:count)
+            end
+          end
       rescue => e
         raise translate_exception_class(e, sql)
       end

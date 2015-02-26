@@ -53,12 +53,10 @@ module ActiveRecord
 
     # When loading console, force ActiveRecord::Base to be loaded
     # to avoid cross references when loading a constant for the
-    # first time. Also, make it output to STDERR.
+    # first time.
     console do |app|
       require "active_record/railties/console_sandbox" if app.sandbox?
       require "active_record/base"
-      console = ActiveSupport::Logger.new(STDERR)
-      Rails.logger.extend ActiveSupport::Logger.broadcast console
     end
 
     runner do
