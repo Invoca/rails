@@ -2,6 +2,7 @@
 # so fixtures aren't loaded into that environment
 abort("Abort testing: Your Rails environment is running in production mode!") if Rails.env.production?
 
+require 'test/unit'
 require 'active_support/testing/autorun'
 require 'active_support/test_case'
 require 'action_controller'
