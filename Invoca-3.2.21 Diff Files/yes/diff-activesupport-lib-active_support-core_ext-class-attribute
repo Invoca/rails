@@ -1,0 +1,17 @@
+diff --git a/activesupport/lib/active_support/core_ext/class/attribute.rb b/activesupport/lib/active_support/core_ext/class/attribute.rb
+index 14adc42..cd7877f 100644
+--- a/activesupport/lib/active_support/core_ext/class/attribute.rb
++++ b/activesupport/lib/active_support/core_ext/class/attribute.rb
+@@ -109,9 +109,7 @@ class Class
+   end
+ 
+   private
+-    unless respond_to?(:singleton_class?)
+-      def singleton_class?
+-        ancestors.first != self
+-      end
+-    end
++  def singleton_class?
++    ancestors.first != self
++  end
+ end

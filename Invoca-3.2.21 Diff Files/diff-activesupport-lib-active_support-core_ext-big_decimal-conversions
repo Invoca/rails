@@ -1,0 +1,15 @@
+diff --git a/activesupport/lib/active_support/core_ext/big_decimal/conversions.rb b/activesupport/lib/active_support/core_ext/big_decimal/conversions.rb
+index d2039fc..391bdc9 100644
+--- a/activesupport/lib/active_support/core_ext/big_decimal/conversions.rb
++++ b/activesupport/lib/active_support/core_ext/big_decimal/conversions.rb
+@@ -16,9 +16,7 @@ class BigDecimal
+   #
+   # Note that reconstituting YAML floats to native floats may lose precision.
+   def to_yaml(opts = {})
+-    return super if
+-      (defined?(YAML::ENGINE) && !YAML::ENGINE.syck?) ||
+-      (defined?(Psych) && YAML == Psych)
++    return super if defined?(YAML::ENGINE) && !YAML::ENGINE.syck?
+ 
+     YAML.quick_emit(nil, opts) do |out|
+       string = to_s

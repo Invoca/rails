@@ -1,0 +1,14 @@
+diff --git a/activesupport/lib/active_support/test_case.rb b/activesupport/lib/active_support/test_case.rb
+index f0f83a7..573736e 100644
+--- a/activesupport/lib/active_support/test_case.rb
++++ b/activesupport/lib/active_support/test_case.rb
+@@ -1,8 +1,4 @@
+-begin
+-  require 'test/unit/testcase'
+-rescue LoadError => e
+-  raise LoadError, "Please add test-unit gem to your Gemfile: `gem 'test-unit', '~> 3.0'` (#{e.message})", e.backtrace
+-end
++require 'test/unit/testcase'
+ require 'active_support/testing/setup_and_teardown'
+ require 'active_support/testing/assertions'
+ require 'active_support/testing/deprecation'

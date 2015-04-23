@@ -1,0 +1,18 @@
+diff --git a/activesupport/lib/active_support/core_ext/date_time/calculations.rb b/activesupport/lib/active_support/core_ext/date_time/calculations.rb
+index 0ff36ee..0481bd2 100644
+--- a/activesupport/lib/active_support/core_ext/date_time/calculations.rb
++++ b/activesupport/lib/active_support/core_ext/date_time/calculations.rb
+@@ -138,12 +138,6 @@ class DateTime
+ 
+   # Layers additional behavior on DateTime#<=> so that Time and ActiveSupport::TimeWithZone instances can be compared with a DateTime
+   def <=>(other)
+-    if other.kind_of?(Infinity)
+-      super
+-    elsif other.respond_to? :to_datetime
+-      super other.to_datetime
+-    else
+-      nil
+-    end
++    super other.kind_of?(Infinity) ? other : other.to_datetime
+   end
+ end

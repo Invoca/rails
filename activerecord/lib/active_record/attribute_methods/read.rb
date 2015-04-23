@@ -82,6 +82,8 @@ module ActiveRecord
       # it has been typecast (for example, "2004-12-12" in a date column is cast
       # to a date object, like Date.new(2004, 12, 12)).
       def read_attribute(attr_name, &block)
+        # RR patch - return if attr_name is blank, otherwise the line generated_external_attribute_methods.method_defined?(attr_name) throws exception
+        return if attr_name.blank? #unless attr_name
         name = attr_name.to_s
         name = self.class.primary_key if name == ID
         _read_attribute(name, &block)

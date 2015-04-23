@@ -1,0 +1,10 @@
+diff --git a/actionmailer/lib/action_mailer.rb b/actionmailer/lib/action_mailer.rb
+index 9bd73dd..30da553 100644
+--- a/actionmailer/lib/action_mailer.rb
++++ b/actionmailer/lib/action_mailer.rb
+@@ -46,4 +46,5 @@ module ActionMailer
+   autoload :MailHelper
+   autoload :TestCase
+   autoload :TestHelper
++  autoload :Utils
+ end

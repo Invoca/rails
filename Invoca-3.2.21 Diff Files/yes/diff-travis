@@ -1,0 +1,13 @@
+diff --git a/.travis.yml b/.travis.yml
+index 8e7f784..e130252 100644
+--- a/.travis.yml
++++ b/.travis.yml
+@@ -6,8 +6,6 @@ rvm:
+   - 1.9.2
+   - 1.9.3
+   - 2.0.0
+-  - 2.1
+-  - 2.2
+ env:
+   - "GEM=railties"
+   - "GEM=ap,am,amo,ares,as"

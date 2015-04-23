@@ -1,0 +1,67 @@
+diff --git a/actionpack/lib/action_view/helpers/url_helper.rb b/actionpack/lib/action_view/helpers/url_helper.rb
+index 51c3100..b2f70c7 100644
+--- a/actionpack/lib/action_view/helpers/url_helper.rb
++++ b/actionpack/lib/action_view/helpers/url_helper.rb
+@@ -33,8 +33,16 @@ module ActionView
+       # end
+       #
+       def url_options
+-        return super unless controller.respond_to?(:url_options)
+-        controller.url_options
++        # RR patch - check whether controller is defined or not to make this work when url_for is overwritten in a non-controller class
++        if defined?(controller)
++          if controller.respond_to?(:url_options)
++            controller.url_options
++          else #controller does not have url_options
++            return super
++          end
++        else #controller is not defined; e.g. when url_for is overwritten in a model
++          return super
++        end
+       end
+ 
+       # Returns the URL for the set of +options+ provided. This takes the
+@@ -104,6 +112,13 @@ module ActionView
+           options
+         when Hash
+           options = options.symbolize_keys.reverse_merge!(:only_path => options[:host].nil?)
++          if defined?(controller) && controller.respond_to?(:rewrite_options, true)
++            options = controller.send( :rewrite_options, options )
++            # TODO: RR patch: see if we can remove the else block.
++          else #either it was called through a chain from a non-controller class or the rewrite_options was not defined
++            # want to use the full path in this case
++            options[:only_path] = false
++          end
+           super
+         when :back
+           controller.request.env["HTTP_REFERER"] || 'javascript:history.back()'
+@@ -301,7 +316,7 @@ module ActionView
+       #   #      <div><input value="Create" type="submit" /></div>
+       #   #    </form>"
+       #
+-      #      
++      #
+       #   <%= button_to "Delete Image", { :action => "delete", :id => @image.id },
+       #             :confirm => "Are you sure?", :method => :delete %>
+       #   # => "<form method="post" action="/images/delete/1" class="button_to">
+@@ -333,9 +348,9 @@ module ActionView
+         form_method = method.to_s == 'get' ? 'get' : 'post'
+         form_options = html_options.delete('form') || {}
+         form_options[:class] ||= html_options.delete('form_class') || 'button_to'
+-        
++
+         remote = html_options.delete('remote')
+-        
++
+         request_token_tag = ''
+         if form_method == 'post' && protect_against_forgery?
+           request_token_tag = tag(:input, :type => "hidden", :name => request_forgery_protection_token.to_s, :value => form_authenticity_token)
+@@ -350,7 +365,7 @@ module ActionView
+ 
+         form_options.merge!(:method => form_method, :action => url)
+         form_options.merge!("data-remote" => "true") if remote
+-        
++
+         "#{tag(:form, form_options, true)}<div>#{method_tag}#{tag("input", html_options)}#{request_token_tag}</div></form>".html_safe
+       end
+ 

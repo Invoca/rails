@@ -1,0 +1,17 @@
+diff --git a/railties/lib/rails/test_help.rb b/railties/lib/rails/test_help.rb
+index dc6999b..2efa25a 100644
+--- a/railties/lib/rails/test_help.rb
++++ b/railties/lib/rails/test_help.rb
+@@ -2,11 +2,7 @@
+ # so fixtures aren't loaded into that environment
+ abort("Abort testing: Your Rails environment is running in production mode!") if Rails.env.production?
+ 
+-begin
+-  require 'test/unit'
+-rescue LoadError => e
+-  raise LoadError, "Please add test-unit gem to your Gemfile: `gem 'test-unit', '~> 3.0'` (#{e.message})", e.backtrace
+-end
++require 'test/unit'
+ require 'active_support/test_case'
+ require 'action_controller/test_case'
+ require 'action_dispatch/testing/integration'

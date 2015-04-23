@@ -1,0 +1,18 @@
+diff --git a/activesupport/lib/active_support/testing/isolation.rb b/activesupport/lib/active_support/testing/isolation.rb
+index d762522..77c0475 100644
+--- a/activesupport/lib/active_support/testing/isolation.rb
++++ b/activesupport/lib/active_support/testing/isolation.rb
+@@ -156,12 +156,7 @@ end
+ 
+ # Only in subprocess for windows / jruby.
+ if ENV['ISOLATION_TEST']
+-  begin
+-    require "test/unit/collector/objectspace"
+-  rescue LoadError => e
+-    raise LoadError, "Please add test-unit gem to your Gemfile: `gem 'test-unit', '~> 3.0'` (#{e.message})", e.backtrace
+-  end
+-
++  require "test/unit/collector/objectspace"
+   class Test::Unit::Collector::ObjectSpace
+     def include?(test)
+       super && test.method_name == ENV['ISOLATION_TEST']

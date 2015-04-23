@@ -1,0 +1,13 @@
+diff --git a/activerecord/lib/active_record/connection_adapters/abstract/connection_specification.rb b/activerecord/lib/active_record/connection_adapters/abstract/connection_specification.rb
+index 04ab7e0..5d6875f 100644
+--- a/activerecord/lib/active_record/connection_adapters/abstract/connection_specification.rb
++++ b/activerecord/lib/active_record/connection_adapters/abstract/connection_specification.rb
+@@ -44,7 +44,7 @@ module ActiveRecord
+         def resolve_hash_connection(spec) # :nodoc:
+           spec = spec.symbolize_keys
+ 
+-          raise(AdapterNotSpecified, "database configuration does not specify adapter") unless spec.key?(:adapter)
++          raise(AdapterNotSpecified, "database configuration #{spec.inspect} does not specify adapter\nconfig = #{@config.inspect}\n#{@configurations.inspect}") unless spec.key?(:adapter)
+ 
+           begin
+             require "active_record/connection_adapters/#{spec[:adapter]}_adapter"

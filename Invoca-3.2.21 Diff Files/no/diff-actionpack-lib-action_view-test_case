@@ -1,0 +1,12 @@
+diff --git a/actionpack/lib/action_view/test_case.rb b/actionpack/lib/action_view/test_case.rb
+index ade0980..658a503 100644
+--- a/actionpack/lib/action_view/test_case.rb
++++ b/actionpack/lib/action_view/test_case.rb
+@@ -193,7 +193,6 @@ module ActionView
+         @_result
+         @_routes
+         @controller
+-        @internal_data
+         @layouts
+         @locals
+         @method_name

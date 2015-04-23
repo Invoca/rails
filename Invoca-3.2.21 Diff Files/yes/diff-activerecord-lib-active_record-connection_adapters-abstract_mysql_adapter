@@ -1,0 +1,92 @@
+diff --git a/activerecord/lib/active_record/connection_adapters/abstract_mysql_adapter.rb b/activerecord/lib/active_record/connection_adapters/abstract_mysql_adapter.rb
+index abccc3a..a3e3690 100644
+--- a/activerecord/lib/active_record/connection_adapters/abstract_mysql_adapter.rb
++++ b/activerecord/lib/active_record/connection_adapters/abstract_mysql_adapter.rb
+@@ -63,7 +63,7 @@ module ActiveRecord
+             when /medium/i
+               16777215
+             when /long/i
+-              2147483647 # mysql only allows 2^31-1, not 2^32-1, somewhat inconsistently with the tiny/medium/normal cases
++              4294967295
+             else
+               super # we could return 65535 here, but we leave it undecorated by default
+             end
+@@ -111,18 +111,20 @@ module ActiveRecord
+       QUOTED_TRUE, QUOTED_FALSE = '1', '0'
+ 
+       NATIVE_DATABASE_TYPES = {
+-        :primary_key => "int(11) DEFAULT NULL auto_increment PRIMARY KEY",
+-        :string      => { :name => "varchar", :limit => 255 },
+-        :text        => { :name => "text" },
+-        :integer     => { :name => "int", :limit => 4 },
+-        :float       => { :name => "float" },
+-        :decimal     => { :name => "decimal" },
+-        :datetime    => { :name => "datetime" },
+-        :timestamp   => { :name => "datetime" },
+-        :time        => { :name => "time" },
+-        :date        => { :name => "date" },
+-        :binary      => { :name => "blob" },
+-        :boolean     => { :name => "tinyint", :limit => 1 }
++        :primary_key              => "int(11) DEFAULT NULL auto_increment PRIMARY KEY",
++        :primary_key_no_increment => "int(11) PRIMARY KEY", #RingRevenue patch
++        :string                   => { :name => "varchar", :limit => 255 },
++        :text                     => { :name => "text" },
++        :integer                  => { :name => "int", :limit => 4 },
++        :float                    => { :name => "float" },
++        :decimal                  => { :name => "decimal" },
++        :datetime                 => { :name => "datetime" },
++        :timestamp                => { :name => "datetime" },
++        :time                     => { :name => "time" },
++        :date                     => { :name => "date" },
++        :binary                   => { :name => "blob" },
++        :boolean                  => { :name => "tinyint", :limit => 1 },
++        :varbinary                => { :name => "varbinary", :limit=> 255 } #RingRevenue patch
+       }
+ 
+       class BindSubstitution < Arel::Visitors::MySQL # :nodoc:
+@@ -196,7 +198,7 @@ module ActiveRecord
+       # QUOTING ==================================================
+ 
+       def quote(value, column = nil)
+-        if value.kind_of?(String) && column && column.type == :binary && column.class.respond_to?(:string_to_binary)
++        if value.kind_of?(String) && column && [:binary, :varbinary].include?(column.type) && column.class.respond_to?(:string_to_binary)
+           s = column.class.string_to_binary(value).unpack("H*")[0]
+           "x'#{s}'"
+         elsif value.kind_of?(BigDecimal)
+@@ -240,9 +242,9 @@ module ActiveRecord
+       # Executes the SQL statement in the context of this connection.
+       def execute(sql, name = nil)
+         if name == :skip_logging
+-          @connection.query(sql)
++          non_nil_connection.query(sql)
+         else
+-          log(sql, name) { @connection.query(sql) }
++          log(sql, name) { non_nil_connection.query(sql) }
+         end
+       rescue ActiveRecord::StatementInvalid => exception
+         if exception.message.split(":").first =~ /Packets out of order/
+@@ -261,7 +263,7 @@ module ActiveRecord
+ 
+       def update_sql(sql, name = nil) #:nodoc:
+         super
+-        @connection.affected_rows
++        non_nil_connection.affected_rows
+       end
+ 
+       def begin_db_transaction
+@@ -331,6 +333,15 @@ module ActiveRecord
+         }.join
+       end
+ 
++      def trigger_dump
++        triggers = ApplicationModel.connection.select_all("show triggers").map do |row|
++          ApplicationModel.connection.select_one("show create trigger #{row['Trigger']}")['SQL Original Statement'].sub(/ DEFINER.*TRIGGER/, ' TRIGGER') +
++            "\n//"
++        end
++
++        "DELIMITER //\n#{triggers.join("\n")}\nDELIMITER ;\n"
++      end
++
+       # Drops the database specified on the +name+ attribute
+       # and creates it again using the provided +options+.
+       def recreate_database(name, options = {})

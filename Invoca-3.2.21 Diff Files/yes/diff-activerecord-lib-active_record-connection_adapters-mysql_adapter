@@ -1,0 +1,24 @@
+diff --git a/activerecord/lib/active_record/connection_adapters/mysql_adapter.rb b/activerecord/lib/active_record/connection_adapters/mysql_adapter.rb
+index 4850b68..054ff64 100644
+--- a/activerecord/lib/active_record/connection_adapters/mysql_adapter.rb
++++ b/activerecord/lib/active_record/connection_adapters/mysql_adapter.rb
+@@ -2,7 +2,7 @@ require 'active_record/connection_adapters/abstract_mysql_adapter'
+ require 'active_record/connection_adapters/statement_pool'
+ require 'active_support/core_ext/hash/keys'
+ 
+-gem 'mysql', '~> 2.8'
++gem 'mysql', '~> 2.9'
+ require 'mysql'
+ 
+ class Mysql
+@@ -139,6 +139,10 @@ module ActiveRecord
+ 
+       # HELPER METHODS ===========================================
+ 
++      def create_table(table_name, options = {}) #:nodoc:
++        super(table_name, options.reverse_merge(:options => "ENGINE=InnoDB DEFAULT CHARSET=utf8"))
++      end
++
+       def each_hash(result) # :nodoc:
+         if block_given?
+           result.each_hash do |row|

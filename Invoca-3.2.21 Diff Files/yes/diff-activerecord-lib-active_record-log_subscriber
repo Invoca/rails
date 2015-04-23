@@ -1,0 +1,15 @@
+diff --git a/activerecord/lib/active_record/log_subscriber.rb b/activerecord/lib/active_record/log_subscriber.rb
+index 2b6488f..6a43159 100644
+--- a/activerecord/lib/active_record/log_subscriber.rb
++++ b/activerecord/lib/active_record/log_subscriber.rb
+@@ -40,6 +40,10 @@ module ActiveRecord
+         }.inspect
+       end
+ 
++      if rows = payload[:rows]
++        name += " rows: #{rows}"
++      end
++
+       if odd?
+         name = color(name, CYAN, true)
+         sql  = color(sql, nil, true)
