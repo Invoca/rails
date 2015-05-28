@@ -857,10 +857,7 @@ module ActiveRecord
         @loaded_fixtures = @@already_loaded_fixtures[self.class]
       else
         ActiveRecord::Fixtures.reset_cache
-        #TODO - jpt - HACK: We destroy the triggers to allow fixtures to load and recreate them afterwards.
-        ApplicationModel.drop_triggers!
         @loaded_fixtures ||= (marshal_hash || create_fixtures_from_yaml)
-        ApplicationModel.recreate_triggers!
         @@already_loaded_fixtures[self.class] = @loaded_fixtures
       end
 
@@ -895,11 +892,11 @@ module ActiveRecord
           end
           marshal_hash[yaml_file] = fixture_hash
         end
+        marshal_hash
       rescue Exception => ex
         puts "Error loading Marshal file #{fixture_path}default.marshal: #{ex}"
-        marshal_hash = nil
+        nil
       end
-      marshal_hash
     end
 
     def teardown_fixtures

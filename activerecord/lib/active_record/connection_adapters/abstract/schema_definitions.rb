@@ -39,6 +39,19 @@ module ActiveRecord
         end
     end
 
+    module ClassColumn
+      def class_column( symbol, prefix )
+        klass = symbol.to_s.classify.constantize
+        #AR models do respond to a different columns method, but we only want to handle non-persistent classes
+        if klass.respond_to?(:columns) && !klass.ancestors.include?(ActiveRecord::Base)
+          klass.columns(prefix).each do |col_def|
+            column *col_def
+          end
+          return true
+        end
+      end
+    end
+
     # Represents the schema of an SQL table in an abstract way. This class
     # provides methods for manipulating the schema representation.
     #
@@ -60,6 +73,17 @@ module ActiveRecord
     # The table definitions
     # The Columns are stored as a ColumnDefinition in the +columns+ attribute.
     class TableDefinition
+      include ClassColumn
+
+      def method_missing(symbol, *args)
+        if symbol.to_s == 'xml'
+          return xml_column_fallback(args)
+        end
+        unless class_column(symbol, args[0])
+          super
+        end
+      end
+
       # An array of ColumnDefinition objects, representing the column changes
       # that have been defined.
       attr_accessor :columns
@@ -324,6 +348,18 @@ module ActiveRecord
     #   end
     #
     class Table
+      include ClassColumn
+
+      def change_column_null( column_name, null, default = nil )
+        @base.change_column_null(@table_name, column_name, null, default)
+      end
+
+      def method_missing(symbol, *args)
+        unless class_column(symbol, args[0])
+          super
+        end
+      end
+
       def initialize(table_name, base)
         @table_name = table_name
         @base = base
@@ -487,6 +523,5 @@ module ActiveRecord
           @base.native_database_types
         end
     end
-
   end
 end

@@ -668,7 +668,48 @@ module ActiveRecord #:nodoc:
         init_with(coder)
       end
 
+      # all those methods are imported from previous versions of Rails and are used indirectly by the update method of Warehouse::CallFactShard
+      def attributes_with_quotes(include_primary_key = true, include_readonly_attributes = true, attribute_names = @attributes.keys)
+        quoted = {}
+        connection = self.class.connection
+        attribute_names.each do |name|
+          if (column = column_for_attribute(name)) && (include_primary_key || !column.primary)
+            value = read_attribute(name)
+
+            # We need explicit to_yaml because quote() does not properly convert Time/Date fields to YAML.
+            if value && self.class.serialized_attributes.has_key?(name) && (value.acts_like?(:date) || value.acts_like?(:time))
+              value = value.to_yaml
+            end
+
+            quoted[name] = connection.quote(value, column)
+          end
+        end
+        include_readonly_attributes ? quoted : remove_readonly_attributes(quoted)
+      end
+
+      # Removes attributes which have been marked as readonly.
+      def remove_readonly_attributes(attributes)
+        unless self.class.readonly_attributes.nil?
+          attributes.delete_if { |key, value| self.class.readonly_attributes.include?(key.gsub(/\(.+/,"")) }
+        else
+          attributes
+        end
+      end
+
+      # Create an assignment clause for the set part of a raw update statement
+      def quoted_comma_pair_list(quoter, hash)
+        comma_pair_list(quote_columns(quoter, hash))
+      end
+
     private
+
+      def quote_columns(quoter, hash)
+        Hash[hash.map { |name, value| [quoter.quote_column_name(name), value] }]
+      end
+
+      def comma_pair_list(hash)
+        hash.map { |k,v| "#{k} = #{v}" }.join(", ")
+      end
 
       # Under Ruby 1.9, Array#flatten will call #to_ary (recursively) on each of the elements
       # of the array, and then rescues from the possible NoMethodError. If those elements are

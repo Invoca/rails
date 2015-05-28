@@ -112,6 +112,13 @@ module ActionView
           options
         when Hash
           options = options.symbolize_keys.reverse_merge!(:only_path => options[:host].nil?)
+          if defined?(controller) && controller.respond_to?(:rewrite_options, true)
+            options = controller.send( :rewrite_options, options )
+            # TODO: RR patch: see if we can remove the else block.
+          else #either it was called through a chain from a non-controller class or the rewrite_options was not defined
+            # want to use the full path in this case
+            options[:only_path] = false
+          end
           super
         when :back
           controller.request.env["HTTP_REFERER"] || 'javascript:history.back()'
@@ -309,7 +316,7 @@ module ActionView
       #   #      <div><input value="Create" type="submit" /></div>
       #   #    </form>"
       #
-      #      
+      #
       #   <%= button_to "Delete Image", { :action => "delete", :id => @image.id },
       #             :confirm => "Are you sure?", :method => :delete %>
       #   # => "<form method="post" action="/images/delete/1" class="button_to">
@@ -341,9 +348,9 @@ module ActionView
         form_method = method.to_s == 'get' ? 'get' : 'post'
         form_options = html_options.delete('form') || {}
         form_options[:class] ||= html_options.delete('form_class') || 'button_to'
-        
+
         remote = html_options.delete('remote')
-        
+
         request_token_tag = ''
         if form_method == 'post' && protect_against_forgery?
           request_token_tag = tag(:input, :type => "hidden", :name => request_forgery_protection_token.to_s, :value => form_authenticity_token)
@@ -358,7 +365,7 @@ module ActionView
 
         form_options.merge!(:method => form_method, :action => url)
         form_options.merge!("data-remote" => "true") if remote
-        
+
         "#{tag(:form, form_options, true)}<div>#{method_tag}#{tag("input", html_options)}#{request_token_tag}</div></form>".html_safe
       end
 

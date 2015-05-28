@@ -61,10 +61,9 @@ module ActiveRecord
             when /tiny/i
               255
             when /medium/i
-              #16777215
-              5592405 # collation of utf8; RingRevenue patch
+              16777215
             when /long/i
-              2147483647 # mysql only allows 2^31-1, not 2^32-1, somewhat inconsistently with the tiny/medium/normal cases
+              4294967295
             else
               super # we could return 65535 here, but we leave it undecorated by default
             end
@@ -199,7 +198,7 @@ module ActiveRecord
       # QUOTING ==================================================
 
       def quote(value, column = nil)
-        if value.kind_of?(String) && column && column.type == :binary && column.class.respond_to?(:string_to_binary)
+        if value.kind_of?(String) && column && [:binary, :varbinary].include?(column.type) && column.class.respond_to?(:string_to_binary)
           s = column.class.string_to_binary(value).unpack("H*")[0]
           "x'#{s}'"
         elsif value.kind_of?(BigDecimal)
@@ -243,9 +242,9 @@ module ActiveRecord
       # Executes the SQL statement in the context of this connection.
       def execute(sql, name = nil)
         if name == :skip_logging
-          @connection.query(sql)
+          non_nil_connection.query(sql)
         else
-          log(sql, name) { @connection.query(sql) }
+          log(sql, name) { non_nil_connection.query(sql) }
         end
       rescue ActiveRecord::StatementInvalid => exception
         if exception.message.split(":").first =~ /Packets out of order/
@@ -264,7 +263,7 @@ module ActiveRecord
 
       def update_sql(sql, name = nil) #:nodoc:
         super
-        @connection.affected_rows
+        non_nil_connection.affected_rows
       end
 
       def begin_db_transaction
@@ -332,6 +331,15 @@ module ActiveRecord
           sql = "SHOW CREATE TABLE #{quote_table_name(table.to_a.first.last)}"
           exec_query(sql).first['Create Table'] + ";\n\n"
         }.join
+      end
+
+      def trigger_dump
+        triggers = ApplicationModel.connection.select_all("show triggers").map do |row|
+          ApplicationModel.connection.select_one("show create trigger #{row['Trigger']}")['SQL Original Statement'].sub(/ DEFINER.*TRIGGER/, ' TRIGGER') +
+            "\n//"
+        end
+
+        "DELIMITER //\n#{triggers.join("\n")}\nDELIMITER ;\n"
       end
 
       # Drops the database specified on the +name+ attribute

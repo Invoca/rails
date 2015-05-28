@@ -242,7 +242,7 @@ module ActionDispatch
       @app.call(env)
     ensure
       session    = env['rack.session'] || {}
-      flash_hash = env[KEY]
+      flash_hash = env['action_dispatch.request.flash_hash']
 
       if flash_hash
         if !flash_hash.empty? || session.key?('flash')
@@ -252,10 +252,10 @@ module ActionDispatch
           new_hash = flash_hash
         end
 
-        env[KEY] = new_hash
+        env['action_dispatch.request.flash_hash'] = new_hash
       end
 
-      if session.key?('flash') && session['flash'].empty?
+      if session.key?('flash') && (!session['flash'] || session['flash'].empty?)
         session.delete('flash')
       end
     end
