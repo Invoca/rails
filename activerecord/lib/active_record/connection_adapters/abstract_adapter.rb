@@ -61,7 +61,7 @@ module ActiveRecord
         super()
 
         @active              = nil
-        @connection          = connection
+        self.connection      = connection
         @in_use              = false
         @instrumenter        = ActiveSupport::Notifications.instrumenter
         @last_use            = false
@@ -74,6 +74,19 @@ module ActiveRecord
         @visitor             = nil
         @rows_read           = [] # RR patch
       end
+
+      protected
+
+      def connection=(new_connection)
+        @connection = new_connection
+        @connection_set_caller = caller
+      end
+
+      def non_nil_connection
+        @connection or raise "Connection is nil! It was assigned by:\n#{(@connection_set_caller || ['<none>']).join("\n")}"
+      end
+
+      public
 
       def lease
         synchronize do

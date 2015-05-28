@@ -375,7 +375,14 @@ module ActionView
         options[:html][:authenticity_token] = options.delete(:authenticity_token)
 
         builder = options[:parent_builder] = instantiate_builder(object_name, object, options, &block)
-        output  = capture(builder, &block)
+        ### changed lines below ###
+        output =
+            if builder.respond_to?(:replace_content)
+              builder.replace_content( capture(builder, &block) )
+            else
+              capture(builder, &block)
+            end
+        ### end change ###
         default_options = builder.multipart? ? { :multipart => true } : {}
         form_tag(options.delete(:url) || {}, default_options.merge!(options.delete(:html))) { output }
       end
@@ -602,7 +609,14 @@ module ActionView
       #   <% end %>
       def fields_for(record_name, record_object = nil, options = {}, &block)
         builder = instantiate_builder(record_name, record_object, options, &block)
-        output = capture(builder, &block)
+        ### changed lines below ###
+        output =
+          if builder.respond_to?(:replace_content)
+            concat builder.replace_content( capture(builder, &block) )
+          else
+            capture(builder, &block)
+          end
+        ### end change ###
         output.concat builder.hidden_field(:id) if output && options[:hidden_field_id] && !builder.emitted_hidden_id?
         output
       end
@@ -1406,6 +1420,12 @@ module ActionView
 
       def emitted_hidden_id?
         @emitted_hidden_id ||= nil
+      end
+
+      # => this method was ported from Rails 2.3.8;
+      # => we can remove it if we decide to use a gem for better customization or we can just customize this one to serve our needs
+      def error_messages(options = {})
+        @template.error_messages_for(@object_name, objectify_options(options))
       end
 
       private

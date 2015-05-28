@@ -324,6 +324,28 @@ module ActiveRecord
   # For a list of commands that are reversible, please see
   # <tt>ActiveRecord::Migration::CommandRecorder</tt>.
   class Migration
+    def self.add_foreign_key(parent, child, cascade = false, foreign_key = parent.to_s.singularize + '_id')
+      constraint_name = "#{child.to_s}_#{foreign_key}"
+      # If an index does not exist one is created with the same name as the constraint.
+      execute "ALTER TABLE #{child} ADD CONSTRAINT #{constraint_name} FOREIGN KEY #{constraint_name}(#{foreign_key}) REFERENCES #{parent}(id)" + (cascade ? " ON DELETE CASCADE" : "")
+    end
+
+    def self.remove_foreign_key(parent,child,remove_index=false )
+      constraint_name = "#{child.to_s}_#{parent.to_s.singularize}_id"
+      execute "ALTER TABLE #{child} DROP FOREIGN KEY #{constraint_name}"
+      remove_index child, :name=> constraint_name if remove_index
+    end
+
+    def self.drop_foreign_key(child,fk_name)
+      execute "ALTER TABLE #{child} DROP FOREIGN KEY #{fk_name}"
+      #remove_index child, :name => fk_name
+    end
+
+    def self.write(text="")
+      puts(text) if verbose
+      $stdout.flush # This is new - flush the output so we can follow along when the migration is run in the background.
+    end
+
     autoload :CommandRecorder, 'active_record/migration/command_recorder'
 
     class << self
@@ -545,6 +567,10 @@ module ActiveRecord
       attr_writer :migrations_paths
       alias :migrations_path= :migrations_paths=
 
+      def db_configuration
+        ActiveRecord::Base.configurations[Rails.env + "_migration"] || ActiveRecord::Base.configurations[Rails.env]
+      end
+
       def migrate(migrations_paths, target_version = nil, &block)
         case
           when target_version.nil?
@@ -659,6 +685,7 @@ module ActiveRecord
     end
 
     def initialize(direction, migrations_paths, target_version = nil)
+      ActiveRecord::Base.establish_connection(self.class.db_configuration)
       raise StandardError.new("This database does not yet support migrations") unless Base.connection.supports_migrations?
       Base.connection.initialize_schema_migrations_table
       @direction, @migrations_paths, @target_version = direction, migrations_paths, target_version

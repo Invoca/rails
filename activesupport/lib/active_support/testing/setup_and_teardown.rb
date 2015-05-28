@@ -81,7 +81,9 @@ module ActiveSupport
               add_error(e)
             ensure
               begin
-                teardown
+                # remove the basic test-unit teardown as that may raise exceptions that are not caught, causing subsequent teardown callbacks to not run
+                # this can cause transactional fixtures to not be rolled back
+                #teardown
                 run_callbacks :teardown
               rescue Mocha::ExpectationError => e
                 add_failure(e.message, e.backtrace)
