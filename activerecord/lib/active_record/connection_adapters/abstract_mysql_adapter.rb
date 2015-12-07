@@ -111,7 +111,7 @@ module ActiveRecord
       QUOTED_TRUE, QUOTED_FALSE = '1', '0'
 
       NATIVE_DATABASE_TYPES = {
-        :primary_key              => "int(11) DEFAULT NULL auto_increment PRIMARY KEY",
+        :primary_key              => "int auto_increment PRIMARY KEY",
         :primary_key_no_increment => "int(11) PRIMARY KEY", #RingRevenue patch
         :string                   => { :name => "varchar", :limit => 255 },
         :text                     => { :name => "text" },
