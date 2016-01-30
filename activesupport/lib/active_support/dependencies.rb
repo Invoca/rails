@@ -481,6 +481,21 @@ module ActiveSupport #:nodoc:
       mod_name == "Object" ? name.to_s : "#{mod_name}::#{name}"
     end
 
+    ALLOWED_DEPENDENCY_ORDER = [
+      "app/controllers/",
+      "app/views/",
+      "app/helpers",
+      "app/models/",
+      "app/models/warehouse",
+      "app/models/concerns",
+      "config/",
+      "lib/"
+    ]
+
+    def dependency_index(path)
+      ALLOWED_DEPENDENCY_ORDER.find.with_index { |prefix, i| path.starts_with?(prefix) and break i }
+    end
+
     # Load the constant named +const_name+ which is missing from +from_mod+. If
     # it is not possible to load the constant into from_mod, try its parent module
     # using const_missing.
@@ -499,6 +514,17 @@ module ActiveSupport #:nodoc:
       file_path = search_for_file(path_suffix)
 
       if file_path && ! loaded.include?(File.expand_path(file_path).sub(/\.rb\z/, '')) # We found a matching file to load
+        suffix_range = (Rails.root.to_s.size+1)..-1
+        app_caller = caller[2..10].find { |c| c.starts_with?(Rails.root.to_s) and break c[suffix_range].sub(/:\d.*/, '') }
+        relative_file_path = file_path[suffix_range]
+        app_index = dependency_index(app_caller) if app_caller
+        relative_file_path_index = dependency_index(relative_file_path) if relative_file_path
+        unless relative_file_path_index.nil? || app_index.nil?
+          if relative_file_path_index < app_index
+            puts "#{app_caller} #{relative_file_path}"
+          end
+        end
+
         require_or_load file_path
         raise LoadError, "Expected #{file_path} to define #{qualified_name}" unless local_const_defined?(from_mod, const_name)
         return from_mod.const_get(const_name)
