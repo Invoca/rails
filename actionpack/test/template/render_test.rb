@@ -126,6 +126,40 @@ module RenderTestCases
     assert_equal "only partial", @view.render("test/partial_only")
   end
 
+  def test_render_outside_path
+    assert File.exist?(File.join(File.dirname(__FILE__), '../../test/abstract_unit.rb'))
+    assert_raises ActionView::MissingTemplate do
+      @view.render(:template => "../\\../test/abstract_unit.rb")
+    end
+  end
+
+  def test_render_with_params
+    params = { :inline => '<%= RUBY_VERSION %>' }.with_indifferent_access
+    assert_raises ArgumentError do
+      @view.render(params)
+    end
+  end
+
+  def test_render_with_strong_parameters
+    # compatibility with Strong Parameters gem
+    params = Class.new(HashWithIndifferentAccess).new
+    params[:inline] = '<%= RUBY_VERSION %>'
+    e = assert_raises ArgumentError do
+      @view.render(params)
+    end
+    assert_equal "render parameters are not permitted", e.message
+  end
+
+  def test_render_with_permitted_strong_parameters
+    # compatibility with Strong Parameters gem
+    params = Class.new(HashWithIndifferentAccess).new
+    params[:inline] = "<%= 'hello' %>"
+    def params.permitted?
+      true
+    end
+    assert_equal 'hello', @view.render(params)
+  end
+
   def test_render_partial
     assert_equal "only partial", @view.render(:partial => "test/partial_only")
   end

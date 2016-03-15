@@ -1,3 +1,5 @@
+require 'active_support/hash_with_indifferent_access'
+
 module ActionView
   # This is the main entry point for rendering. It basically delegates
   # to other objects like TemplateRenderer and PartialRenderer which
@@ -11,6 +13,11 @@ module ActionView
 
     # Main render entry point shared by AV and AC.
     def render(context, options)
+      if (options.is_a?(HashWithIndifferentAccess) && !options.respond_to?(:permitted?)) ||
+         (options.respond_to?(:permitted?) && !options.permitted?)
+        raise ArgumentError, "render parameters are not permitted"
+      end
+
       if options.key?(:partial)
         render_partial(context, options)
       else
