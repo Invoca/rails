@@ -303,6 +303,7 @@ module ActiveRecord
           ) do
               yield.tap do |result|
                 hash[:rows] = result.count if result.respond_to?(:count)
+                hash[:last_id] = @connection.last_id if @connection.respond_to?(:last_id) && @connection.last_id > 0
               end
             end
         rescue Exception => e
