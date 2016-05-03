@@ -44,6 +44,10 @@ module ActiveRecord
         name += " rows: #{rows}"
       end
 
+      if last_id = payload[:last_id]
+        name += " last_id: #{last_id}"
+      end
+
       if odd?
         name = color(name, CYAN, true)
         sql  = color(sql, nil, true)
