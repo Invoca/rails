@@ -497,9 +497,7 @@ module ActiveRecord
       end
 
       def add_column_options!(sql, options) #:nodoc:
-        if options_include_default?(options) && !options[:default].nil? # RingRevenue patch - MySQL doesn't allow DEFAULT NULL with NOT NULL -- it's implied when DEFAULT omitted
-          sql << " DEFAULT #{quote(options[:default], options[:column])}" 
-        end
+        sql << " DEFAULT #{quote(options[:default], options[:column])}" if options_include_default?(options)
         # must explicitly check for :null to allow change_column to work on migrations
         if options[:null] == false
           sql << " NOT NULL"
@@ -557,8 +555,7 @@ module ActiveRecord
         end
 
         def options_include_default?(options)
-          # RingRevenue patch - allow DEFAULT NULL statements
-          options.include?(:default)# && !(options[:null] == false && options[:default].nil?)
+          options.include?(:default) && !(options[:null] == false && options[:default].nil?)
         end
 
         def add_index_options(table_name, column_name, options = {})
@@ -575,11 +572,8 @@ module ActiveRecord
           if index_name.length > index_name_length
             raise ArgumentError, "Index name '#{index_name}' on table '#{table_name}' is too long; the limit is #{index_name_length} characters"
           end
-          # RingRevenue patch
-          unless (options.key?(:check_for_existence) || options[:check_for_existence])
-            if index_name_exists?(table_name, index_name, false)
-              raise ArgumentError, "Index name '#{index_name}' on table '#{table_name}' already exists"
-            end
+          if index_name_exists?(table_name, index_name, false)
+            raise ArgumentError, "Index name '#{index_name}' on table '#{table_name}' already exists"
           end
           index_columns = quoted_columns_for_index(column_names, options).join(", ")
 
