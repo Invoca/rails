@@ -391,8 +391,8 @@ module ActiveRecord
 
     def self.find_table_name(table_name) # :nodoc:
       ActiveRecord::Base.pluralize_table_names ?
-          table_name.to_s.singularize.camelize :
-          table_name.to_s.camelize
+        table_name.to_s.singularize.camelize :
+        table_name.to_s.camelize
     end
 
     def self.reset_cache
@@ -442,8 +442,8 @@ module ActiveRecord
     def self.instantiate_fixtures(object, fixture_set, load_instances = true, rails_3_2_compatibility_argument = true)
       unless load_instances == true || load_instances == false
         ActiveSupport::Deprecation.warn(
-            "ActiveRecord::Fixtures.instantiate_fixtures with parameters (object, fixture_set_name, fixture_set, load_instances = true) is deprecated and shall be removed from future releases.  Use it with parameters (object, fixture_set, load_instances = true) instead (skip fixture_set_name).",
-            caller)
+          "ActiveRecord::Fixtures.instantiate_fixtures with parameters (object, fixture_set_name, fixture_set, load_instances = true) is deprecated and shall be removed from future releases.  Use it with parameters (object, fixture_set, load_instances = true) instead (skip fixture_set_name).",
+          caller)
         fixture_set = load_instances
         load_instances = rails_3_2_compatibility_argument
       end
@@ -480,10 +480,10 @@ module ActiveRecord
             table_name = path.tr '/', '_'
 
             fixtures_map[path] = ActiveRecord::Fixtures.new(
-                connection,
-                table_name,
-                class_names[table_name.to_sym] || table_name.classify,
-                ::File.join(fixtures_directory, path))
+              connection,
+              table_name,
+              class_names[table_name.to_sym] || table_name.classify,
+              ::File.join(fixtures_directory, path))
           end
 
           all_loaded_fixtures.update(fixtures_map)
@@ -599,35 +599,35 @@ module ActiveRecord
 
           # If STI is used, find the correct subclass for association reflection
           reflection_class =
-              if row.include?(inheritance_column_name)
-                row[inheritance_column_name].constantize rescue model_class
-              else
-                model_class
-              end
+            if row.include?(inheritance_column_name)
+              row[inheritance_column_name].constantize rescue model_class
+            else
+              model_class
+            end
 
           reflection_class.reflect_on_all_associations.each do |association|
             case association.macro
-              when :belongs_to
-                # Do not replace association name with association foreign key if they are named the same
-                fk_name = (association.options[:foreign_key] || "#{association.name}_id").to_s
+            when :belongs_to
+              # Do not replace association name with association foreign key if they are named the same
+              fk_name = (association.options[:foreign_key] || "#{association.name}_id").to_s
 
-                if association.name.to_s != fk_name && value = row.delete(association.name.to_s)
-                  if association.options[:polymorphic] && value.sub!(/\s*\(([^\)]*)\)\s*$/, "")
-                    # support polymorphic belongs_to as "label (Type)"
-                    row[association.foreign_type] = $1
-                  end
+              if association.name.to_s != fk_name && value = row.delete(association.name.to_s)
+                if association.options[:polymorphic] && value.sub!(/\s*\(([^\)]*)\)\s*$/, "")
+                  # support polymorphic belongs_to as "label (Type)"
+                  row[association.foreign_type] = $1
+                end
 
-                  row[fk_name] = ActiveRecord::Fixtures.identify(value)
-                end
-              when :has_and_belongs_to_many
-                if (targets = row.delete(association.name.to_s))
-                  targets = targets.is_a?(Array) ? targets : targets.split(/\s*,\s*/)
-                  table_name = association.options[:join_table]
-                  rows[table_name].concat targets.map { |target|
-                    { association.foreign_key             => row[primary_key_name],
-                      association.association_foreign_key => ActiveRecord::Fixtures.identify(target) }
-                  }
-                end
+                row[fk_name] = ActiveRecord::Fixtures.identify(value)
+              end
+            when :has_and_belongs_to_many
+              if (targets = row.delete(association.name.to_s))
+                targets = targets.is_a?(Array) ? targets : targets.split(/\s*,\s*/)
+                table_name = association.options[:join_table]
+                rows[table_name].concat targets.map { |target|
+                  { association.foreign_key             => row[primary_key_name],
+                    association.association_foreign_key => ActiveRecord::Fixtures.identify(target) }
+                }
+              end
             end
           end
         end
@@ -638,45 +638,45 @@ module ActiveRecord
     end
 
     private
-    def primary_key_name
-      @primary_key_name ||= model_class && model_class.primary_key
-    end
+      def primary_key_name
+        @primary_key_name ||= model_class && model_class.primary_key
+      end
 
-    def has_primary_key_column?
-      @has_primary_key_column ||= primary_key_name &&
-          model_class.columns.any? { |c| c.name == primary_key_name }
-    end
+      def has_primary_key_column?
+        @has_primary_key_column ||= primary_key_name &&
+            model_class.columns.any? { |c| c.name == primary_key_name }
+      end
 
-    def timestamp_column_names
-      @timestamp_column_names ||=
-          %w(created_at created_on updated_at updated_on) & column_names
-    end
+      def timestamp_column_names
+        @timestamp_column_names ||=
+            %w(created_at created_on updated_at updated_on) & column_names
+      end
 
-    def inheritance_column_name
-      @inheritance_column_name ||= model_class && model_class.inheritance_column
-    end
+      def inheritance_column_name
+        @inheritance_column_name ||= model_class && model_class.inheritance_column
+      end
 
-    def column_names
-      @column_names ||= @connection.columns(@table_name).collect { |c| c.name }
-    end
+      def column_names
+        @column_names ||= @connection.columns(@table_name).collect { |c| c.name }
+      end
 
-    def read_fixture_files
-      yaml_files = Dir["#{@fixture_path}/{**,*}/*.yml"].select { |f|
-        ::File.file?(f)
-      } + [yaml_file_path]
+      def read_fixture_files
+        yaml_files = Dir["#{@fixture_path}/{**,*}/*.yml"].select { |f|
+          ::File.file?(f)
+        } + [yaml_file_path]
 
-      yaml_files.each do |file|
-        Fixtures::File.open(file) do |fh|
-          fh.each do |name, row|
-            fixtures[name] = ActiveRecord::Fixture.new(row, model_class)
+        yaml_files.each do |file|
+          Fixtures::File.open(file) do |fh|
+            fh.each do |name, row|
+              fixtures[name] = ActiveRecord::Fixture.new(row, model_class)
           end
         end
       end
     end
 
-    def yaml_file_path
-      "#{@fixture_path}.yml"
-    end
+      def yaml_file_path
+        "#{@fixture_path}.yml"
+      end
 
   end
 
@@ -827,7 +827,7 @@ module ActiveRecord
 
     def run_in_transaction?
       use_transactional_fixtures &&
-          !self.class.uses_transaction?(method_name)
+        !self.class.uses_transaction?(method_name)
     end
 
     def setup_fixtures
