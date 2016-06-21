@@ -13,7 +13,6 @@ require 'active_support/core_ext/object/blank'
 require 'active_support/core_ext/logger'
 require 'active_support/ordered_hash'
 require 'active_record/fixtures/file'
-require 'shellwords'
 
 if defined? ActiveRecord
   class FixtureClassNotFound < ActiveRecord::ActiveRecordError #:nodoc:
@@ -387,14 +386,13 @@ module ActiveRecord
   # Any fixture labeled "DEFAULTS" is safely ignored.
   class Fixtures
     MAX_ID = 2 ** 30 - 1
-    FIXTURE_REALMS = [:default, :sample_data]
 
     @@all_cached_fixtures = Hash.new { |h,k| h[k] = {} }
 
     def self.find_table_name(table_name) # :nodoc:
       ActiveRecord::Base.pluralize_table_names ?
-        table_name.to_s.singularize.camelize :
-        table_name.to_s.camelize
+          table_name.to_s.singularize.camelize :
+          table_name.to_s.camelize
     end
 
     def self.reset_cache
@@ -444,8 +442,8 @@ module ActiveRecord
     def self.instantiate_fixtures(object, fixture_set, load_instances = true, rails_3_2_compatibility_argument = true)
       unless load_instances == true || load_instances == false
         ActiveSupport::Deprecation.warn(
-          "ActiveRecord::Fixtures.instantiate_fixtures with parameters (object, fixture_set_name, fixture_set, load_instances = true) is deprecated and shall be removed from future releases.  Use it with parameters (object, fixture_set, load_instances = true) instead (skip fixture_set_name).",
-          caller)
+            "ActiveRecord::Fixtures.instantiate_fixtures with parameters (object, fixture_set_name, fixture_set, load_instances = true) is deprecated and shall be removed from future releases.  Use it with parameters (object, fixture_set, load_instances = true) instead (skip fixture_set_name).",
+            caller)
         fixture_set = load_instances
         load_instances = rails_3_2_compatibility_argument
       end
@@ -482,26 +480,24 @@ module ActiveRecord
             table_name = path.tr '/', '_'
 
             fixtures_map[path] = ActiveRecord::Fixtures.new(
-              connection,
-              table_name,
-              class_names[table_name.to_sym] || table_name.classify,
-              ::File.join(fixtures_directory, path))
+                connection,
+                table_name,
+                class_names[table_name.to_sym] || table_name.classify,
+                ::File.join(fixtures_directory, path))
           end
 
           all_loaded_fixtures.update(fixtures_map)
 
           connection.transaction(:requires_new => true) do
             fixture_files.each do |ff|
-              conn = ff.model_class.try(:connection) || connection
+              conn = ff.model_class.respond_to?(:connection) ? ff.model_class.connection : connection
+              table_rows = ff.table_rows
 
-              ff.table_rows.keys.each do |table_name|
-                conn.delete "DELETE FROM #{conn.quote_table_name(table_name)}", 'Fixture Delete'
+              table_rows.keys.each do |table|
+                conn.delete "DELETE FROM #{conn.quote_table_name(table)}", 'Fixture Delete'
               end
-            end
 
-            fixture_files.each do |ff|
-              conn = ff.model_class.try(:connection) || connection
-              ff.table_rows.each do |table_name, rows|
+              table_rows.each do |table_name,rows|
                 rows.each do |row|
                   conn.insert_fixture(row, table_name)
                 end
@@ -603,35 +599,35 @@ module ActiveRecord
 
           # If STI is used, find the correct subclass for association reflection
           reflection_class =
-            if row.include?(inheritance_column_name)
-              row[inheritance_column_name].constantize rescue model_class
-            else
-              model_class
-            end
+              if row.include?(inheritance_column_name)
+                row[inheritance_column_name].constantize rescue model_class
+              else
+                model_class
+              end
 
           reflection_class.reflect_on_all_associations.each do |association|
             case association.macro
-            when :belongs_to
-              # Do not replace association name with association foreign key if they are named the same
-              fk_name = (association.options[:foreign_key] || "#{association.name}_id").to_s
+              when :belongs_to
+                # Do not replace association name with association foreign key if they are named the same
+                fk_name = (association.options[:foreign_key] || "#{association.name}_id").to_s
 
-              if association.name.to_s != fk_name && value = row.delete(association.name.to_s)
-                if association.options[:polymorphic] && value.sub!(/\s*\(([^\)]*)\)\s*$/, "")
-                  # support polymorphic belongs_to as "label (Type)"
-                  row[association.foreign_type] = $1
+                if association.name.to_s != fk_name && value = row.delete(association.name.to_s)
+                  if association.options[:polymorphic] && value.sub!(/\s*\(([^\)]*)\)\s*$/, "")
+                    # support polymorphic belongs_to as "label (Type)"
+                    row[association.foreign_type] = $1
+                  end
+
+                  row[fk_name] = ActiveRecord::Fixtures.identify(value)
                 end
-
-                row[fk_name] = ActiveRecord::Fixtures.identify(value)
-              end
-            when :has_and_belongs_to_many
-              if (targets = row.delete(association.name.to_s))
-                targets = targets.is_a?(Array) ? targets : targets.split(/\s*,\s*/)
-                table_name = association.options[:join_table]
-                rows[table_name].concat targets.map { |target|
-                  { association.foreign_key             => row[primary_key_name],
-                    association.association_foreign_key => ActiveRecord::Fixtures.identify(target) }
-                }
-              end
+              when :has_and_belongs_to_many
+                if (targets = row.delete(association.name.to_s))
+                  targets = targets.is_a?(Array) ? targets : targets.split(/\s*,\s*/)
+                  table_name = association.options[:join_table]
+                  rows[table_name].concat targets.map { |target|
+                    { association.foreign_key             => row[primary_key_name],
+                      association.association_foreign_key => ActiveRecord::Fixtures.identify(target) }
+                  }
+                end
             end
           end
         end
@@ -642,45 +638,45 @@ module ActiveRecord
     end
 
     private
-      def primary_key_name
-        @primary_key_name ||= model_class && model_class.primary_key
-      end
+    def primary_key_name
+      @primary_key_name ||= model_class && model_class.primary_key
+    end
 
-      def has_primary_key_column?
-        @has_primary_key_column ||= primary_key_name &&
+    def has_primary_key_column?
+      @has_primary_key_column ||= primary_key_name &&
           model_class.columns.any? { |c| c.name == primary_key_name }
-      end
+    end
 
-      def timestamp_column_names
-        @timestamp_column_names ||=
+    def timestamp_column_names
+      @timestamp_column_names ||=
           %w(created_at created_on updated_at updated_on) & column_names
-      end
+    end
 
-      def inheritance_column_name
-        @inheritance_column_name ||= model_class && model_class.inheritance_column
-      end
+    def inheritance_column_name
+      @inheritance_column_name ||= model_class && model_class.inheritance_column
+    end
 
-      def column_names
-        @column_names ||= @connection.columns(@table_name).collect { |c| c.name }
-      end
+    def column_names
+      @column_names ||= @connection.columns(@table_name).collect { |c| c.name }
+    end
 
-      def read_fixture_files
-        yaml_files = Dir["#{@fixture_path}/{**,*}/*.yml"].select { |f|
-          ::File.file?(f)
-        } + [yaml_file_path]
+    def read_fixture_files
+      yaml_files = Dir["#{@fixture_path}/{**,*}/*.yml"].select { |f|
+        ::File.file?(f)
+      } + [yaml_file_path]
 
-        yaml_files.each do |file|
-          Fixtures::File.open(file) do |fh|
-            fh.each do |name, row|
-              fixtures[name] = ActiveRecord::Fixture.new(row, model_class)
-            end
+      yaml_files.each do |file|
+        Fixtures::File.open(file) do |fh|
+          fh.each do |name, row|
+            fixtures[name] = ActiveRecord::Fixture.new(row, model_class)
           end
         end
       end
+    end
 
-      def yaml_file_path
-        "#{@fixture_path}.yml"
-      end
+    def yaml_file_path
+      "#{@fixture_path}.yml"
+    end
 
   end
 
@@ -831,13 +827,8 @@ module ActiveRecord
 
     def run_in_transaction?
       use_transactional_fixtures &&
-        !self.class.uses_transaction?(method_name)
+          !self.class.uses_transaction?(method_name)
     end
-    
-
-
-    @@active_fixture ||= :none
-    @@current_fixture_realm = :default
 
     def setup_fixtures
       return unless !ActiveRecord::Base.configurations.blank?
@@ -849,56 +840,30 @@ module ActiveRecord
       @fixture_cache = {}
       @fixture_connections = []
       @@already_loaded_fixtures ||= {}
-      
-      if @@current_fixture_realm != fixture_realm
-        @@current_fixture_realm = fixture_realm
-        db_connect(@@current_fixture_realm)
-      end
 
-      if !@@already_loaded_fixtures[self.class].nil?
-        @loaded_fixtures = @@already_loaded_fixtures[self.class]
-      else
-        ActiveRecord::Fixtures.reset_cache
-        @loaded_fixtures ||= (marshal_hash || create_fixtures_from_yaml)
-        @@already_loaded_fixtures[self.class] = @loaded_fixtures
-      end
-
+      # Load fixtures once and begin transaction.
       if run_in_transaction?
+        if @@already_loaded_fixtures[self.class]
+          @loaded_fixtures = @@already_loaded_fixtures[self.class]
+        else
+          @loaded_fixtures = load_fixtures
+          @@already_loaded_fixtures[self.class] = @loaded_fixtures
+        end
         @fixture_connections = enlist_fixture_connections
         @fixture_connections.each do |connection|
           connection.increment_open_transactions
           connection.transaction_joinable = false
           connection.begin_db_transaction
         end
+        # Load fixtures for every test.
       else
-        @@already_loaded_fixtures[self.class] = {}
+        ActiveRecord::Fixtures.reset_cache
+        @@already_loaded_fixtures[self.class] = nil
+        @loaded_fixtures = load_fixtures
       end
 
       # Instantiate fixtures for every test if requested.
       instantiate_fixtures if use_instantiated_fixtures
-    end
-
-    def create_fixtures_from_yaml
-      fixtures = Fixtures.create_fixtures(fixture_path, fixture_table_names, fixture_class_names)
-      Hash[fixtures.map { |f| [f.name, f] }]
-    end
-
-    def marshal_hash
-      begin
-        marshal_hash = {}
-        marshal_load = Marshal.load(File.read("#{fixture_path}default.marshal"))
-        marshal_load.each do |yaml_file, (klass, fixtures)|
-          fixture_hash = {}
-          fixtures.each do |fixture_sym, id|
-            fixture_hash[fixture_sym] = Fixture.new({"id" => id}, klass._?.constantize)
-          end
-          marshal_hash[yaml_file] = fixture_hash
-        end
-        marshal_hash
-      rescue Exception => ex
-        puts "Error loading Marshal file #{fixture_path}default.marshal: #{ex}"
-        nil
-      end
     end
 
     def teardown_fixtures
@@ -925,68 +890,33 @@ module ActiveRecord
       ActiveRecord::Base.connection_handler.connection_pools.values.map(&:connection)
     end
 
+    private
     def load_fixtures
-      Fixtures::FIXTURE_REALMS.each do |fixture_name|
-        db_connect(fixture_name)
+      fixtures = ActiveRecord::Fixtures.create_fixtures(fixture_path, fixture_table_names, fixture_class_names)
+      Hash[fixtures.map { |f| [f.name, f] }]
+    end
 
-        dump_file_name = "#{fixture_path}/#{fixture_name}.sql"
-        File.exists?(dump_file_name) or raise "load_fixtures: Could not find #{dump_file_name}"
-        load_mysql_dump(dump_file_name)
+    # for pre_loaded_fixtures, only require the classes once. huge speed improvement
+    @@required_fixture_classes = false
+
+    def instantiate_fixtures
+      if pre_loaded_fixtures
+        raise RuntimeError, 'Load fixtures before instantiating them.' if ActiveRecord::Fixtures.all_loaded_fixtures.empty?
+        unless @@required_fixture_classes
+          self.class.require_fixture_classes ActiveRecord::Fixtures.all_loaded_fixtures.keys
+          @@required_fixture_classes = true
+        end
+        ActiveRecord::Fixtures.instantiate_all_loaded_fixtures(self, load_instances?)
+      else
+        raise RuntimeError, 'Load fixtures before instantiating them.' if @loaded_fixtures.nil?
+        @loaded_fixtures.each_value do |fixture_set|
+          ActiveRecord::Fixtures.instantiate_fixtures(self, fixture_set, load_instances?)
+        end
       end
     end
 
-    private
-
-    def db_connect(fixture_realm_sym)
-        current_connection_handler = ActiveRecord::Base.connection_handler
-        current_database_spec = current_connection_handler.retrieve_connection_pool(ActiveRecord::Base).spec
-        new_connection_handler = ActiveRecord::ConnectionAdapters::ConnectionHandler.new
-        ActiveRecord::Base.connection_handler = new_connection_handler
-        new_database_name = ActiveRecord::Base.configurations["test#{"_" + fixture_realm_sym.to_s if fixture_realm_sym != :default}"]['database']
-        new_database_config = current_database_spec.config.merge(:database => new_database_name)
-        new_database_spec = current_database_spec.class.new(new_database_config, current_database_spec.adapter_method)
-        ActiveRecord::Base.establish_connection(new_database_spec.config)
-        ActiveRecord::Base.connection
-      end
-
-      # Possible alternative to the above method
-      #def db_connect(fixture_realm_sym)
-      #  ActiveRecord::Base.establish_connection("test#{'_sample_data' unless fixture_sym == :default}")
-      #end
-
-
-      def load_mysql_dump dump_filename
-        raise "Cannot be used in production!" if Rails.env == 'production'
-        config = ActiveRecord::Base.connection.config
-        dump_cmd = "mysql --user=#{Shellwords.shellescape(config[:username])} --password=#{Shellwords.shellescape(config[:password])} #{Shellwords.shellescape(config[:database])} < #{Shellwords.shellescape(dump_filename)}"
-        system(dump_cmd) or raise("Loading mysql dump failed: #{dump_cmd.inspect} resulted in an error")
-#        IO.readlines(dump_filename).join.split(";\n").each do |statement|
-#          ActiveRecord::Base.connection.execute(statement)
-#        end
-        nil
-      end
-
-      # for pre_loaded_fixtures, only require the classes once. huge speed improvement
-      @@required_fixture_classes = false
-
-      def instantiate_fixtures
-        if pre_loaded_fixtures
-          raise RuntimeError, 'Load fixtures before instantiating them.' if ActiveRecord::Fixtures.all_loaded_fixtures.empty?
-          unless @@required_fixture_classes
-            self.class.require_fixture_classes ActiveRecord::Fixtures.all_loaded_fixtures.keys
-            @@required_fixture_classes = true
-          end
-          ActiveRecord::Fixtures.instantiate_all_loaded_fixtures(self, load_instances?)
-        else
-          raise RuntimeError, 'Load fixtures before instantiating them.' if @loaded_fixtures.nil?
-          @loaded_fixtures.each_value do |fixture_set|
-            ActiveRecord::Fixtures.instantiate_fixtures(self, fixture_set, load_instances?)
-          end
-        end
-      end
-
-      def load_instances?
-        use_instantiated_fixtures != :no_instances
-      end
+    def load_instances?
+      use_instantiated_fixtures != :no_instances
+    end
   end
 end
