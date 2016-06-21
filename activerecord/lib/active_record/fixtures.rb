@@ -644,12 +644,12 @@ module ActiveRecord
 
       def has_primary_key_column?
         @has_primary_key_column ||= primary_key_name &&
-            model_class.columns.any? { |c| c.name == primary_key_name }
+          model_class.columns.any? { |c| c.name == primary_key_name }
       end
 
       def timestamp_column_names
         @timestamp_column_names ||=
-            %w(created_at created_on updated_at updated_on) & column_names
+          %w(created_at created_on updated_at updated_on) & column_names
       end
 
       def inheritance_column_name
@@ -669,10 +669,10 @@ module ActiveRecord
           Fixtures::File.open(file) do |fh|
             fh.each do |name, row|
               fixtures[name] = ActiveRecord::Fixture.new(row, model_class)
+            end
           end
         end
       end
-    end
 
       def yaml_file_path
         "#{@fixture_path}.yml"
