@@ -5,13 +5,13 @@ module ActionDispatch
   module Http
     module Parameters
       # Returns both GET and POST \parameters in a single hash.
-      attr_accessor :do_not_strip_string_parameters # Invoca patch
+      attr_accessor :do_not_strip_string_parameters
       def parameters
         @env["action_dispatch.request.parameters"] ||= begin
-          @do_not_strip_string_parameters ||= [] # Invoca patch
+          @do_not_strip_string_parameters ||= []
           params = request_parameters.merge(query_parameters)
           params.merge!(path_parameters)
-          strip_string_params!(params) # Invoca patch
+          strip_string_params!(params)
           encode_params(params).with_indifferent_access
         end
       end
@@ -44,7 +44,7 @@ module ActionDispatch
 
     private
 
-      def strip_string_params!(value_to_strip) # Invoca patch
+      def strip_string_params!(value_to_strip)
         case value_to_strip
         when String
           value_to_strip.strip!
