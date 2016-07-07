@@ -5,6 +5,6 @@ module Rails
     TINY  = 22
     PRE   = "2"
 
-    STRING = [MAJOR, MINOR, TINY, PRE].compact.join('.')
+    STRING = [MAJOR, MINOR, TINY, PRE, "Invoca"].compact.join('.')
   end
 end
