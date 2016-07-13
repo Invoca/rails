@@ -63,7 +63,7 @@ module ActiveRecord
             when /medium/i
               16777215
             when /long/i
-              2147483647 # mysql only allows 2^31-1, not 2^32-1, somewhat inconsistently with the tiny/medium/normal cases
+              4294967295
             else
               super # we could return 65535 here, but we leave it undecorated by default
             end
@@ -111,18 +111,20 @@ module ActiveRecord
       QUOTED_TRUE, QUOTED_FALSE = '1', '0'
 
       NATIVE_DATABASE_TYPES = {
-        :primary_key => "int(11) DEFAULT NULL auto_increment PRIMARY KEY",
-        :string      => { :name => "varchar", :limit => 255 },
-        :text        => { :name => "text" },
-        :integer     => { :name => "int", :limit => 4 },
-        :float       => { :name => "float" },
-        :decimal     => { :name => "decimal" },
-        :datetime    => { :name => "datetime" },
-        :timestamp   => { :name => "datetime" },
-        :time        => { :name => "time" },
-        :date        => { :name => "date" },
-        :binary      => { :name => "blob" },
-        :boolean     => { :name => "tinyint", :limit => 1 }
+          :primary_key              => "int auto_increment PRIMARY KEY",
+          :primary_key_no_increment => "int(11) PRIMARY KEY", # Invoca patch
+          :string                   => { :name => "varchar", :limit => 255 },
+          :text                     => { :name => "text" },
+          :integer                  => { :name => "int", :limit => 4 },
+          :float                    => { :name => "float" },
+          :decimal                  => { :name => "decimal" },
+          :datetime                 => { :name => "datetime" },
+          :timestamp                => { :name => "datetime" },
+          :time                     => { :name => "time" },
+          :date                     => { :name => "date" },
+          :binary                   => { :name => "blob" },
+          :boolean                  => { :name => "tinyint", :limit => 1 },
+          :varbinary                => { :name => "varbinary", :limit=> 255 } # Invoca patch
       }
 
       class BindSubstitution < Arel::Visitors::MySQL # :nodoc:
