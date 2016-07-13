@@ -176,7 +176,7 @@ module ActiveRecord
           case value
           when TrueClass, FalseClass
             value ? 1 : 0
-          when ActiveSupport::OrderedHash #RR patch
+          when ActiveSupport::OrderedHash # Invoca patch
             value.size
           else
             value.to_i rescue nil
@@ -286,7 +286,7 @@ module ActiveRecord
             :date
           when /clob/i, /text/i
             :text
-          when /varbinary/i # RingRevenue patch
+          when /varbinary/i # Invoca patch
             :varbinary
           when /blob/i, /binary/i
             :binary

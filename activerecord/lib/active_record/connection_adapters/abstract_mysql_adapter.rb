@@ -111,20 +111,20 @@ module ActiveRecord
       QUOTED_TRUE, QUOTED_FALSE = '1', '0'
 
       NATIVE_DATABASE_TYPES = {
-          :primary_key              => "int auto_increment PRIMARY KEY",
-          :primary_key_no_increment => "int(11) PRIMARY KEY", # Invoca patch
-          :string                   => { :name => "varchar", :limit => 255 },
-          :text                     => { :name => "text" },
-          :integer                  => { :name => "int", :limit => 4 },
-          :float                    => { :name => "float" },
-          :decimal                  => { :name => "decimal" },
-          :datetime                 => { :name => "datetime" },
-          :timestamp                => { :name => "datetime" },
-          :time                     => { :name => "time" },
-          :date                     => { :name => "date" },
-          :binary                   => { :name => "blob" },
-          :boolean                  => { :name => "tinyint", :limit => 1 },
-          :varbinary                => { :name => "varbinary", :limit=> 255 } # Invoca patch
+        :primary_key              => "int auto_increment PRIMARY KEY",
+        :primary_key_no_increment => "int(11) PRIMARY KEY", # Invoca patch
+        :string                   => { :name => "varchar", :limit => 255 },
+        :text                     => { :name => "text" },
+        :integer                  => { :name => "int", :limit => 4 },
+        :float                    => { :name => "float" },
+        :decimal                  => { :name => "decimal" },
+        :datetime                 => { :name => "datetime" },
+        :timestamp                => { :name => "datetime" },
+        :time                     => { :name => "time" },
+        :date                     => { :name => "date" },
+        :binary                   => { :name => "blob" },
+        :boolean                  => { :name => "tinyint", :limit => 1 },
+        :varbinary                => { :name => "varbinary", :limit=> 255 } # Invoca patch
       }
 
       class BindSubstitution < Arel::Visitors::MySQL # :nodoc:
