@@ -21,7 +21,6 @@ module ActiveRecord
 
   module ConnectionAdapters
     class Mysql2Adapter < AbstractMysqlAdapter
-      attr_reader :config
 
       class Column < AbstractMysqlAdapter::Column # :nodoc:
         def adapter
@@ -64,7 +63,7 @@ module ActiveRecord
       # QUOTING ==================================================
 
       def quote_string(string)
-        non_nil_connection.escape(string)
+        @connection.escape(string)
       end
 
       # CONNECTION MANAGEMENT ====================================
@@ -84,7 +83,7 @@ module ActiveRecord
       def disconnect!
         unless @connection.nil?
           @connection.close
-          self.connection = nil
+          @connection = nil
         end
       end
 
@@ -229,7 +228,7 @@ module ActiveRecord
 
       def insert_sql(sql, name = nil, pk = nil, id_value = nil, sequence_name = nil)
         super
-        id_value || non_nil_connection.last_id
+        id_value || @connection.last_id
       end
       alias :create :insert_sql
 
@@ -239,23 +238,23 @@ module ActiveRecord
 
       def exec_delete(sql, name, binds)
         execute to_sql(sql, binds), name
-        non_nil_connection.affected_rows
+        @connection.affected_rows
       end
       alias :exec_update :exec_delete
 
       def last_inserted_id(result)
-        non_nil_connection.last_id
+        @connection.last_id
       end
 
       private
 
       def connect
-        self.connection = Mysql2::Client.new(@config)
+        @connection = Mysql2::Client.new(@config)
         configure_connection
       end
 
       def configure_connection
-        non_nil_connection.query_options.merge!(:as => :array)
+        @connection.query_options.merge!(:as => :array)
 
         # By default, MySQL 'where id is null' selects the last inserted id.
         # Turn this off. http://dev.rubyonrails.org/ticket/6778
@@ -274,7 +273,7 @@ module ActiveRecord
       end
 
       def version
-        @version ||= non_nil_connection.info[:version].scan(/^(\d+)\.(\d+)\.(\d+)/).flatten.map { |v| v.to_i }
+        @version ||= @connection.info[:version].scan(/^(\d+)\.(\d+)\.(\d+)/).flatten.map { |v| v.to_i }
       end
     end
   end

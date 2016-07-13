@@ -2,7 +2,7 @@ require 'active_record/connection_adapters/abstract_mysql_adapter'
 require 'active_record/connection_adapters/statement_pool'
 require 'active_support/core_ext/hash/keys'
 
-gem 'mysql', '~> 2.9'
+gem 'mysql', '~> 2.8'
 require 'mysql'
 
 class Mysql
@@ -138,10 +138,6 @@ module ActiveRecord
       end
 
       # HELPER METHODS ===========================================
-
-      def create_table(table_name, options = {}) #:nodoc:
-        super(table_name, options.reverse_merge(:options => "ENGINE=InnoDB DEFAULT CHARSET=utf8"))
-      end
 
       def each_hash(result) # :nodoc:
         if block_given?

@@ -61,7 +61,7 @@ module ActiveRecord
         super()
 
         @active              = nil
-        self.connection      = connection
+        @connection          = connection
         @in_use              = false
         @instrumenter        = ActiveSupport::Notifications.instrumenter
         @last_use            = false
@@ -72,21 +72,7 @@ module ActiveRecord
         @query_cache_enabled = false
         @schema_cache        = SchemaCache.new self
         @visitor             = nil
-        @rows_read           = [] # RR patch
       end
-
-      protected
-
-      def connection=(new_connection)
-        @connection = new_connection
-        @connection_set_caller = caller
-      end
-
-      def non_nil_connection
-        @connection or raise "Connection is nil! It was assigned by:\n#{(@connection_set_caller || ['<none>']).join("\n")}"
-      end
-
-      public
 
       def lease
         synchronize do
@@ -149,12 +135,6 @@ module ActiveRecord
       # This is false for all adapters but Firebird.
       def prefetch_primary_key?(table_name = nil)
         false
-      end
-
-      # RR patch
-      def reset_rows_read
-        rows_read, @rows_read = @rows_read, []
-        rows_read
       end
 
       # Does this adapter support index sort order?
@@ -294,18 +274,10 @@ module ActiveRecord
         def log(sql, name = "SQL", binds = [])
           @instrumenter.instrument(
             "sql.active_record",
-              hash = {
-              :sql           => sql,
-              :name          => name,
-              :connection_id => object_id,
-              :binds         => binds
-            }
-          ) do
-              yield.tap do |result|
-                hash[:rows] = result.count if result.respond_to?(:count)
-                hash[:last_id] = @connection.last_id if @connection.respond_to?(:last_id) && @connection.last_id > 0
-              end
-            end
+            :sql           => sql,
+            :name          => name,
+            :connection_id => object_id,
+            :binds         => binds) { yield }
         rescue Exception => e
           message = "#{e.class.name}: #{e.message}: #{sql}"
           @logger.debug message if @logger

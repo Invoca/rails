@@ -63,7 +63,7 @@ module ActiveRecord
             when /medium/i
               16777215
             when /long/i
-              4294967295
+              2147483647 # mysql only allows 2^31-1, not 2^32-1, somewhat inconsistently with the tiny/medium/normal cases
             else
               super # we could return 65535 here, but we leave it undecorated by default
             end
@@ -111,20 +111,18 @@ module ActiveRecord
       QUOTED_TRUE, QUOTED_FALSE = '1', '0'
 
       NATIVE_DATABASE_TYPES = {
-        :primary_key              => "int auto_increment PRIMARY KEY",
-        :primary_key_no_increment => "int(11) PRIMARY KEY", #RingRevenue patch
-        :string                   => { :name => "varchar", :limit => 255 },
-        :text                     => { :name => "text" },
-        :integer                  => { :name => "int", :limit => 4 },
-        :float                    => { :name => "float" },
-        :decimal                  => { :name => "decimal" },
-        :datetime                 => { :name => "datetime" },
-        :timestamp                => { :name => "datetime" },
-        :time                     => { :name => "time" },
-        :date                     => { :name => "date" },
-        :binary                   => { :name => "blob" },
-        :boolean                  => { :name => "tinyint", :limit => 1 },
-        :varbinary                => { :name => "varbinary", :limit=> 255 } #RingRevenue patch
+        :primary_key => "int(11) DEFAULT NULL auto_increment PRIMARY KEY",
+        :string      => { :name => "varchar", :limit => 255 },
+        :text        => { :name => "text" },
+        :integer     => { :name => "int", :limit => 4 },
+        :float       => { :name => "float" },
+        :decimal     => { :name => "decimal" },
+        :datetime    => { :name => "datetime" },
+        :timestamp   => { :name => "datetime" },
+        :time        => { :name => "time" },
+        :date        => { :name => "date" },
+        :binary      => { :name => "blob" },
+        :boolean     => { :name => "tinyint", :limit => 1 }
       }
 
       class BindSubstitution < Arel::Visitors::MySQL # :nodoc:
@@ -198,7 +196,7 @@ module ActiveRecord
       # QUOTING ==================================================
 
       def quote(value, column = nil)
-        if value.kind_of?(String) && column && [:binary, :varbinary].include?(column.type) && column.class.respond_to?(:string_to_binary)
+        if value.kind_of?(String) && column && column.type == :binary && column.class.respond_to?(:string_to_binary)
           s = column.class.string_to_binary(value).unpack("H*")[0]
           "x'#{s}'"
         elsif value.kind_of?(BigDecimal)
@@ -242,9 +240,9 @@ module ActiveRecord
       # Executes the SQL statement in the context of this connection.
       def execute(sql, name = nil)
         if name == :skip_logging
-          non_nil_connection.query(sql)
+          @connection.query(sql)
         else
-          log(sql, name) { non_nil_connection.query(sql) }
+          log(sql, name) { @connection.query(sql) }
         end
       rescue ActiveRecord::StatementInvalid => exception
         if exception.message.split(":").first =~ /Packets out of order/
@@ -263,7 +261,7 @@ module ActiveRecord
 
       def update_sql(sql, name = nil) #:nodoc:
         super
-        non_nil_connection.affected_rows
+        @connection.affected_rows
       end
 
       def begin_db_transaction
@@ -331,15 +329,6 @@ module ActiveRecord
           sql = "SHOW CREATE TABLE #{quote_table_name(table.to_a.first.last)}"
           exec_query(sql).first['Create Table'] + ";\n\n"
         }.join
-      end
-
-      def trigger_dump
-        triggers = ApplicationModel.connection.select_all("show triggers").map do |row|
-          ApplicationModel.connection.select_one("show create trigger #{row['Trigger']}")['SQL Original Statement'].sub(/ DEFINER.*TRIGGER/, ' TRIGGER') +
-            "\n//"
-        end
-
-        "DELIMITER //\n#{triggers.join("\n")}\nDELIMITER ;\n"
       end
 
       # Drops the database specified on the +name+ attribute
