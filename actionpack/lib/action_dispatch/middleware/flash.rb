@@ -242,7 +242,7 @@ module ActionDispatch
       @app.call(env)
     ensure
       session    = env['rack.session'] || {}
-      flash_hash = env['action_dispatch.request.flash_hash']
+      flash_hash = env[KEY]
 
       if flash_hash
         if !flash_hash.empty? || session.key?('flash')
@@ -252,10 +252,10 @@ module ActionDispatch
           new_hash = flash_hash
         end
 
-        env['action_dispatch.request.flash_hash'] = new_hash
+        env[KEY] = new_hash
       end
 
-      if session.key?('flash') && (!session['flash'] || session['flash'].empty?)
+      if session.key?('flash') && (!session['flash'] || session['flash'].empty?) # Invoca patch, fixed in rails 4
         session.delete('flash')
       end
     end

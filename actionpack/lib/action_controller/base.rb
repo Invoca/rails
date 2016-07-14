@@ -183,9 +183,8 @@ module ActionController
       @do_not_strip_string_parameters
     end
 
-    def self.strip_string_parameters options
-      options.assert_valid_keys([:except])
-      @do_not_strip_string_parameters = [options[:except]].compact.flatten
+    def self.strip_string_parameters(except:)
+      @do_not_strip_string_parameters = Array(except)
     end
 
     def process_with_strip_string_parameters(action, *args)
