@@ -188,8 +188,7 @@ module ActionController
     end
 
     def process_with_strip_string_parameters(action, *args)
-      request.do_not_strip_string_parameters = self.class.do_not_strip_string_parameters
-      process_without_strip_string_parameters(action, *args)
+      @do_not_strip_string_parameters = Array(except)
     end
 
     alias_method_chain :process, :strip_string_parameters
