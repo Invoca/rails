@@ -279,19 +279,53 @@ db_namespace = namespace :db do
       end
     end
 
+    # Invoca Patch
+      MYSQL_DUMP_HEADER = <<EOS
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!40101 SET NAMES utf8 */;
+/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
+/*!40103 SET TIME_ZONE='+00:00' */;
+/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
+/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
+/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
+/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
+
+EOS
+
+      MYSQL_DUMP_FOOTER = <<EOS
+
+/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
+
+/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
+/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
+/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
+
+EOS
+
   end
 
   namespace :structure do
-    desc 'Dump the database structure to db/structure.sql. Specify another file with DB_STRUCTURE=db/my_structure.sql'
+    desc 'Dump the database structure to db/schema.sql. Specify another file with DB_STRUCTURE=db/my_structure.sql'
     task :dump => [:environment, :load_config] do
-      filename = ENV['DB_STRUCTURE'] || File.join(ActiveRecord::Tasks::DatabaseTasks.db_dir, "structure.sql")
+      # Invoca Patch - change 'structure.sql' to 'schema.sql'
+      filename = ENV['DB_STRUCTURE'] || File.join(ActiveRecord::Tasks::DatabaseTasks.db_dir, "schema.sql")
       current_config = ActiveRecord::Tasks::DatabaseTasks.current_config
       ActiveRecord::Tasks::DatabaseTasks.structure_dump(current_config, filename)
 
       if ActiveRecord::Base.connection.supports_migrations? &&
           ActiveRecord::SchemaMigration.table_exists?
-        File.open(filename, "a") do |f|
-          f.puts ActiveRecord::Base.connection.dump_schema_information
+        # Invoca Patch
+        File.open(filename, "w+") do |f|
+          f.puts MYSQL_DUMP_HEADER
+          f.puts ActiveRecord::Base.connection.dump_schema_information.gsub(/AUTO_INCREMENT=\d+ /,'')
+          f.puts ActiveRecord::Base.connection.trigger_dump
+          f.puts MYSQL_DUMP_FOOTER
         end
       end
       db_namespace['structure:dump'].reenable
@@ -299,9 +333,16 @@ db_namespace = namespace :db do
 
     # desc "Recreate the databases from the structure.sql file"
     task :load => [:environment, :load_config] do
-      filename = ENV['DB_STRUCTURE'] || File.join(ActiveRecord::Tasks::DatabaseTasks.db_dir, "structure.sql")
+      # Invoca Patch - change 'structure.sql' to 'schema.sql'
+      filename = ENV['DB_STRUCTURE'] || File.join(ActiveRecord::Tasks::DatabaseTasks.db_dir, "schema.sql")
       current_config = ActiveRecord::Tasks::DatabaseTasks.current_config
-      ActiveRecord::Tasks::DatabaseTasks.structure_load(current_config, filename)
+      # Invoca Patch - check that file exists and load file
+      File.exists?(filename) or abort %{#{filename} doesn't exist yet. Run "rake db:migrate" to create it then try again. If you do not intend to use a database, you should instead alter #{Rails.root}/config/boot.rb to limit the frameworks that will be loaded}
+      command = "mysql '-u#{config["username"]}' '-p#{config["password"]}' '#{config["database"]}' < '#{filename}'"
+      puts command if ENV['verbose'] != 'false'
+      system( command )
+      $?.success? or raise "#{task.name} failed executing `#{command}`"
+      # ActiveRecord::Tasks::DatabaseTasks.structure_load(current_config, filename)
     end
 
     task :load_if_sql => ['db:create', :environment] do
