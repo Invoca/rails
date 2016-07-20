@@ -64,6 +64,7 @@ module ActiveRecord
         when :date                        then Date
         when :text, :string, :binary      then String
         when :boolean                     then Object
+        when :varbinary                   then String # Invoca Patch
         end
       end
 
@@ -128,6 +129,7 @@ module ActiveRecord
         when :hstore               then "#{klass}.string_to_hstore(#{var_name})"
         when :inet, :cidr          then "#{klass}.string_to_cidr(#{var_name})"
         when :json                 then "#{klass}.string_to_json(#{var_name})"
+        when :varbinary            then "#{klass}.binary_to_string(#{var_name})" # Invoca Patch
         else var_name
         end
       end
@@ -206,6 +208,8 @@ module ActiveRecord
           case value
           when TrueClass, FalseClass
             value ? 1 : 0
+          when ActiveSupport::OrderedHash # Invoca Patch
+            value.size
           else
             value.to_i rescue nil
           end
@@ -313,6 +317,8 @@ module ActiveRecord
             :date
           when /clob/i, /text/i
             :text
+          when /varbinary/i # Invoca Patch
+            :varbinary
           when /blob/i, /binary/i
             :binary
           when /char/i, /string/i
