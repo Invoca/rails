@@ -199,6 +199,21 @@ module ActionController
       MODULES - modules
     end
 
+    # Invoca Patch - strip string parameters methods, also used in ActionDispatch::Http::Parameters
+    def self.do_not_strip_string_parameters
+      @do_not_strip_string_parameters
+    end
+
+    def self.strip_string_parameters(except:)
+      @do_not_strip_string_parameters = Array(except)
+    end
+
+    def process_with_strip_string_parameters(except:)
+      @do_not_strip_string_parameters = Array(except)
+    end
+
+    alias_method_chain :process, :strip_string_parameters
+
     MODULES = [
       AbstractController::Layouts,
       AbstractController::Translation,

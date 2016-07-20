@@ -4,6 +4,9 @@ require 'active_support/core_ext/hash/indifferent_access'
 module ActionDispatch
   module Http
     module Parameters
+      # Invoca Patch - strip string parameters patch, methods implemented in ActionController::Base
+      attr_accessor :do_not_strip_string_parameters
+
       def initialize(env)
         super
         @symbolized_path_params = nil
@@ -12,12 +15,14 @@ module ActionDispatch
       # Returns both GET and POST \parameters in a single hash.
       def parameters
         @env["action_dispatch.request.parameters"] ||= begin
+          @do_not_strip_string_parameters ||= [] # Invoca Patch
           params = begin
             request_parameters.merge(query_parameters)
           rescue EOFError
             query_parameters.dup
           end
           params.merge!(path_parameters)
+          strip_string_params!(params) # Invoca Patch
           params.with_indifferent_access
         end
       end
@@ -49,6 +54,18 @@ module ActionDispatch
       end
 
     private
+
+      # Invoca Patch
+      def strip_string_params!(value_to_strip)
+        case value_to_strip
+          when String
+            value_to_strip.strip!
+          when Hash
+            value_to_strip.each{ |key, value| strip_string_params!(value) if !key.respond_to?(:to_sym) || key.to_sym.not_in?(do_not_strip_string_parameters) }
+          when Array
+            value_to_strip.each{ |value| strip_string_params!(value) }
+        end
+      end
 
       # Convert nested Hash to HashWithIndifferentAccess
       # and UTF-8 encode both keys and values in nested Hash.
