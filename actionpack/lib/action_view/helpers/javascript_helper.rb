@@ -85,7 +85,7 @@ module ActionView
           "See http://guides.rubyonrails.org/working_with_javascript_in_rails.html#unobtrusive-javascript"
         ActiveSupport::Deprecation.warn message
 
-        onclick = "#{"#{html_options[:onclick]}; " if html_options[:onclick]}#{function};"
+        onclick = "#{"#{html_options[:onclick]}; " if html_options[:onclick]}#{function};".html_safe # Invoca Patch - TODO ORabani - 'button_to_function' method will be deprecated in Rails 4.1
 
         tag(:input, html_options.merge(:type => 'button', :value => name, :onclick => onclick))
       end
@@ -107,7 +107,7 @@ module ActionView
           "See http://guides.rubyonrails.org/working_with_javascript_in_rails.html#unobtrusive-javascript"
         ActiveSupport::Deprecation.warn message
 
-        onclick = "#{"#{html_options[:onclick]}; " if html_options[:onclick]}#{function}; return false;"
+        onclick = "#{"#{html_options[:onclick]}; " if html_options[:onclick]}#{function}; return false;".html_safe # Invoca Patch - TODO ORabani - 'link_to_function' method will be deprecated in Rails 4.1
         href = html_options[:href] || '#'
 
         content_tag(:a, name, html_options.merge(:href => href, :onclick => onclick))
