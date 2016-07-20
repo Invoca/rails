@@ -432,7 +432,12 @@ module ActionView
         html_options[:authenticity_token] = options.delete(:authenticity_token)
 
         builder = instantiate_builder(object_name, object, options)
-        output  = capture(builder, &block)
+        output = # Invoca Patch
+          if builder.respond_to?(:replace_content)
+            builder.replace_content( capture(builder, &block) )
+          else
+            capture(builder, &block)
+          end
         html_options[:multipart] ||= builder.multipart?
 
         form_tag(options[:url] || {}, html_options) { output }
@@ -696,7 +701,12 @@ module ActionView
       # to prevent fields_for from rendering it automatically.
       def fields_for(record_name, record_object = nil, options = {}, &block)
         builder = instantiate_builder(record_name, record_object, options)
-        capture(builder, &block)
+        # Invoca Patch
+        if builder.respond_to?(:replace_content)
+          concat builder.replace_content( capture(builder, &block) )
+        else
+          capture(builder, &block)
+        end
       end
 
       # Returns a label tag tailored for labelling an input field for a specified attribute (identified by +method+) on an object
