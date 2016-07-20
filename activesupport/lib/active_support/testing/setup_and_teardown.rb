@@ -27,6 +27,8 @@ module ActiveSupport
       end
 
       def after_teardown
+        # TODO Rails4 ORabani - walk through a test(s) to see if test-unit teardowns cause any exceptions that aren't caught, causing subsequent teardown callbacks to not run
+        # this can cause transactional fixtures to not be rolled back
         run_callbacks :teardown
         super
       end
