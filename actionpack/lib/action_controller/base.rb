@@ -187,7 +187,7 @@ module ActionController
       @do_not_strip_string_parameters = Array(except)
     end
 
-    def process_with_strip_string_parameters(action, *args)
+    def process_with_strip_string_parameters(except:)
       @do_not_strip_string_parameters = Array(except)
     end
 
