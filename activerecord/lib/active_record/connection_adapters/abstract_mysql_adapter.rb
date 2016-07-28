@@ -124,7 +124,7 @@ module ActiveRecord
         :date                     => { :name => "date" },
         :binary                   => { :name => "blob" },
         :boolean                  => { :name => "tinyint", :limit => 1 },
-        :varbinary                => { :name => "varbinary", :limit=> 255 } # Invoca patch
+        :varbinary                => { :name => "varbinary", :limit=> 255 } # Invoca patch - implement 'varbinary' as native database type, also see patches in ActiveRecord::ConnectionAdapters::Column
       }
 
       class BindSubstitution < Arel::Visitors::MySQL # :nodoc:
