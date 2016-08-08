@@ -471,16 +471,16 @@ module ActiveRecord
 
           connection.transaction(:requires_new => true) do
             fixture_sets.each do |fs|
-              conn = ff.model_class.try(:connection) || connection
+              conn = fs.model_class.try(:connection) || connection
 
-              ff.table_rows.keys.each do |table_name|
+              fs.table_rows.keys.each do |table_name|
                 conn.delete "DELETE FROM #{conn.quote_table_name(table_name)}", 'Fixture Delete'
               end
             end
 
-            fixture_files.each do |ff|
-              conn = ff.model_class.try(:connection) || connection
-              ff.table_rows.each do |table_name, rows|
+            fixture_sets.each do |fs|
+              conn = fs.model_class.try(:connection) || connection
+              fs.table_rows.each do |fixture_set_name, rows|
                 rows.each do |row|
                   conn.insert_fixture(row, fixture_set_name)
                 end
