@@ -63,7 +63,7 @@ module ActiveRecord
         when :date                        then Date
         when :text, :string, :binary      then String
         when :boolean                     then Object
-        when :varbinary                   then String # RingRevenue patch
+        when :varbinary                   then String # Invoca patch
         end
       end
 
@@ -101,7 +101,7 @@ module ActiveRecord
         when :date                 then "#{klass}.string_to_date(#{var_name})"
         when :binary               then "#{klass}.binary_to_string(#{var_name})"
         when :boolean              then "#{klass}.value_to_boolean(#{var_name})"
-        when :varbinary            then "#{klass}.binary_to_string(#{var_name})" # RingRevenue patch
+        when :varbinary            then "#{klass}.binary_to_string(#{var_name})" # Invoca patch
         else var_name
         end
       end
@@ -176,7 +176,7 @@ module ActiveRecord
           case value
           when TrueClass, FalseClass
             value ? 1 : 0
-          when ActiveSupport::OrderedHash #RR patch
+          when ActiveSupport::OrderedHash # Invoca patch
             value.size
           else
             value.to_i rescue nil
@@ -286,7 +286,7 @@ module ActiveRecord
             :date
           when /clob/i, /text/i
             :text
-          when /varbinary/i # RingRevenue patch
+          when /varbinary/i # Invoca patch
             :varbinary
           when /blob/i, /binary/i
             :binary

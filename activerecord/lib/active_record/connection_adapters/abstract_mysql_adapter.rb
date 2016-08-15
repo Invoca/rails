@@ -112,7 +112,7 @@ module ActiveRecord
 
       NATIVE_DATABASE_TYPES = {
         :primary_key              => "int auto_increment PRIMARY KEY",
-        :primary_key_no_increment => "int(11) PRIMARY KEY", #RingRevenue patch
+        :primary_key_no_increment => "int(11) PRIMARY KEY", # Invoca patch
         :string                   => { :name => "varchar", :limit => 255 },
         :text                     => { :name => "text" },
         :integer                  => { :name => "int", :limit => 4 },
@@ -124,7 +124,7 @@ module ActiveRecord
         :date                     => { :name => "date" },
         :binary                   => { :name => "blob" },
         :boolean                  => { :name => "tinyint", :limit => 1 },
-        :varbinary                => { :name => "varbinary", :limit=> 255 } #RingRevenue patch
+        :varbinary                => { :name => "varbinary", :limit=> 255 } # Invoca patch - implement 'varbinary' as native database type, also see patches in ActiveRecord::ConnectionAdapters::Column
       }
 
       class BindSubstitution < Arel::Visitors::MySQL # :nodoc:
@@ -242,9 +242,9 @@ module ActiveRecord
       # Executes the SQL statement in the context of this connection.
       def execute(sql, name = nil)
         if name == :skip_logging
-          non_nil_connection.query(sql)
+          @connection.query(sql)
         else
-          log(sql, name) { non_nil_connection.query(sql) }
+          log(sql, name) { @connection.query(sql) }
         end
       rescue ActiveRecord::StatementInvalid => exception
         if exception.message.split(":").first =~ /Packets out of order/
@@ -263,7 +263,7 @@ module ActiveRecord
 
       def update_sql(sql, name = nil) #:nodoc:
         super
-        non_nil_connection.affected_rows
+        @connection.affected_rows
       end
 
       def begin_db_transaction
@@ -331,15 +331,6 @@ module ActiveRecord
           sql = "SHOW CREATE TABLE #{quote_table_name(table.to_a.first.last)}"
           exec_query(sql).first['Create Table'] + ";\n\n"
         }.join
-      end
-
-      def trigger_dump
-        triggers = ApplicationModel.connection.select_all("show triggers").map do |row|
-          ApplicationModel.connection.select_one("show create trigger #{row['Trigger']}")['SQL Original Statement'].sub(/ DEFINER.*TRIGGER/, ' TRIGGER') +
-            "\n//"
-        end
-
-        "DELIMITER //\n#{triggers.join("\n")}\nDELIMITER ;\n"
       end
 
       # Drops the database specified on the +name+ attribute
