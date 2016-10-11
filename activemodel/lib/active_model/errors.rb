@@ -329,7 +329,8 @@ module ActiveModel
     def add_on_blank(attributes, options = {})
       Array(attributes).each do |attribute|
         value = @base.send(:read_attribute_for_validation, attribute)
-        add(attribute, :blank, options) if value.blank?
+        # Invoca Patch - take into account the :allow_nil option
+        add(attribute, :blank, options) if value.blank? && !(value.nil? && options[:allow_nil])
       end
     end
 
