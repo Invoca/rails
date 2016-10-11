@@ -327,7 +327,7 @@ index 37620ee..e8063e5 100644
              :binary
            when /char/i, /string/i
 diff --git a/activerecord/lib/active_record/fixtures.rb b/activerecord/lib/active_record/fixtures.rb
-index 48240b4..710da05e 100644
+index 48240b4..6c761ca 100644
 --- a/activerecord/lib/active_record/fixtures.rb
 +++ b/activerecord/lib/active_record/fixtures.rb
 @@ -4,6 +4,7 @@
@@ -378,7 +378,7 @@ index 48240b4..710da05e 100644
      def setup_fixtures
        return if ActiveRecord::Base.configurations.blank?
  
-@@ -851,23 +858,49 @@ def setup_fixtures
+@@ -851,29 +858,55 @@ def setup_fixtures
        @fixture_connections = []
        @@already_loaded_fixtures ||= {}
  
@@ -413,32 +413,38 @@ index 48240b4..710da05e 100644
 -        @@already_loaded_fixtures[self.class] = nil
 -        @loaded_fixtures = load_fixtures
 +        @@already_loaded_fixtures[self.class] = {}
-+      end
-+
-+      def create_fixtures_from_yaml
-+        fixtures = Fixtures.create_fixtures(fixture_path, fixture_table_names, fixture_class_names)
-+        Hash[fixtures.map { |f| [f.name, f] }]
-+      end
-+
-+      def marshal_hash
-+        begin
-+          marshal_hash = {}
-+          marshal_load = Marshal.load(File.read("#{fixture_path}default.marshal"))
-+          marshal_load.each do |yaml_file, (klass, fixtures)|
-+            fixture_hash = {}
-+            fixtures.each do |fixture_sym, id|
-+              fixture_hash[fixture_sym] = Fixture.new({"id" => id}, klass._?.constantize)
-+            end
-+            marshal_hash[yaml_file] = fixture_hash
-+          end
-+          marshal_hash
-+        rescue Exception => ex
-+          puts "Error loading Marshal file #{fixture_path}default.marshal: #{ex}"
-+          nil
-+        end
        end
  
        # Instantiate fixtures for every test if requested.
+       instantiate_fixtures if use_instantiated_fixtures
+     end
+ 
++    def create_fixtures_from_yaml
++      fixtures = Fixtures.create_fixtures(fixture_path, fixture_table_names, fixture_class_names)
++      Hash[fixtures.map { |f| [f.name, f] }]
++    end
++
++    def marshal_hash
++      begin
++        marshal_hash = {}
++        marshal_load = Marshal.load(File.read("#{fixture_path}default.marshal"))
++        marshal_load.each do |yaml_file, (klass, fixtures)|
++          fixture_hash = {}
++          fixtures.each do |fixture_sym, id|
++            fixture_hash[fixture_sym] = Fixture.new({"id" => id}, klass._?.constantize)
++          end
++          marshal_hash[yaml_file] = fixture_hash
++        end
++        marshal_hash
++      rescue Exception => ex
++        puts "Error loading Marshal file #{fixture_path}default.marshal: #{ex}"
++        nil
++      end
++    end
++
+     def teardown_fixtures
+       return if ActiveRecord::Base.configurations.blank?
+ 
 @@ -894,11 +927,45 @@ def enlist_fixture_connections
        ActiveRecord::Base.connection_handler.connection_pool_list.map(&:connection)
      end
