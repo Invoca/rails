@@ -880,31 +880,31 @@ module ActiveRecord
         @@already_loaded_fixtures[self.class] = {}
       end
 
-      def create_fixtures_from_yaml
-        fixtures = Fixtures.create_fixtures(fixture_path, fixture_table_names, fixture_class_names)
-        Hash[fixtures.map { |f| [f.name, f] }]
-      end
-
-      def marshal_hash
-        begin
-          marshal_hash = {}
-          marshal_load = Marshal.load(File.read("#{fixture_path}default.marshal"))
-          marshal_load.each do |yaml_file, (klass, fixtures)|
-            fixture_hash = {}
-            fixtures.each do |fixture_sym, id|
-              fixture_hash[fixture_sym] = Fixture.new({"id" => id}, klass._?.constantize)
-            end
-            marshal_hash[yaml_file] = fixture_hash
-          end
-          marshal_hash
-        rescue Exception => ex
-          puts "Error loading Marshal file #{fixture_path}default.marshal: #{ex}"
-          nil
-        end
-      end
-
       # Instantiate fixtures for every test if requested.
       instantiate_fixtures if use_instantiated_fixtures
+    end
+
+    def create_fixtures_from_yaml
+      fixtures = Fixtures.create_fixtures(fixture_path, fixture_table_names, fixture_class_names)
+      Hash[fixtures.map { |f| [f.name, f] }]
+    end
+
+    def marshal_hash
+      begin
+        marshal_hash = {}
+        marshal_load = Marshal.load(File.read("#{fixture_path}default.marshal"))
+        marshal_load.each do |yaml_file, (klass, fixtures)|
+          fixture_hash = {}
+          fixtures.each do |fixture_sym, id|
+            fixture_hash[fixture_sym] = Fixture.new({"id" => id}, klass._?.constantize)
+          end
+          marshal_hash[yaml_file] = fixture_hash
+        end
+        marshal_hash
+      rescue Exception => ex
+        puts "Error loading Marshal file #{fixture_path}default.marshal: #{ex}"
+        nil
+      end
     end
 
     def teardown_fixtures
