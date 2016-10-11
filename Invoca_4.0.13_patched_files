@@ -1,0 +1,43 @@
+RAILS
+Note: Invoca_4.0.13_patches.diff contains all the patches that still need to be applied
+      Invoca_4.0.13_patches.diff.orig is all Rails 4.0 patches
+
+OK (patch will merge fine)
+####################################################################################
+- activerecord/lib/active_record/fixtures.rb
+  - Doesn't appear like it'll be a problem (just might need to rearrange some stuff)
+
+Not ok (code changed, will need to rethink patch)
+####################################################################################
+- activerecord/lib/active_record/connection_adapters/abstract_mysql_adapter.rb
+  - code changed for changing 'long' limit
+--
+  OK - activerecord/lib/active_record/connection_adapters/abstract/schema_definitions.rb
+  NOT OK - activerecord/lib/active_record/connection_adapters/abstract_mysql_adapter.rb
+    - quote method format changed a little, but the NATIVE_DATABASE_TYPES is ok
+  NOT OK - activerecord/lib/active_record/connection_adapters/column.rb
+- activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb
+  - 'add_column_options!' method changed/removed
+- activerecord/lib/active_record/railties/databases.rake
+  - load task changed a bit
+
+
+Applied in branch invoca-4.2.7.1-TECH-1303
+####################################################################################
+- version.rb
+- railties/lib/rails/version.rb
+- actionpack/lib/action_view/helpers/form_helper.rb
+- actionpack/lib/action_view/routing_url_for.rb
+- activemodel/lib/active_model/errors.rb
+- activerecord/lib/active_record/log_subscriber.rb
+- activesupport/lib/active_support/core_ext/time/conversions.rb
+- actionpack/lib/action_controller/base.rb
+- actionpack/lib/action_dispatch/http/parameters.rb
+- activerecord/lib/active_record/relation/calculations.rb
+
+Skipped
+####################################################################################
+- activesupport/lib/active_support/testing/setup_and_teardown.rb
+  - It's only a TODO statement, will need to check ATS, Minitest, and other gems again
+- actionpack/lib/action_view/helpers/javascript_helper.rb
+  - 'button_to_function' and 'link_to_function' removed in favor of unobtrusive javascript

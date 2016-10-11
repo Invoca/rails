@@ -1,0 +1,653 @@
+diff --git a/actionpack/lib/action_controller/base.rb b/actionpack/lib/action_controller/base.rb
+index e26d1a2..4a28372 100644
+--- a/actionpack/lib/action_controller/base.rb
++++ b/actionpack/lib/action_controller/base.rb
+@@ -199,6 +199,22 @@ def self.without_modules(*modules)
+       MODULES - modules
+     end
+ 
++    # Invoca Patch - strip string parameters methods, also used in ActionDispatch::Http::Parameters
++    def self.do_not_strip_string_parameters
++      @do_not_strip_string_parameters
++    end
++
++    def self.strip_string_parameters(except:)
++      @do_not_strip_string_parameters = Array(except)
++    end
++
++    def process_with_strip_string_parameters(action, *args)
++      request.do_not_strip_string_parameters = self.class.do_not_strip_string_parameters
++      process_without_strip_string_parameters(action, *args)
++    end
++
++    alias_method_chain :process, :strip_string_parameters
++
+     MODULES = [
+       AbstractController::Layouts,
+       AbstractController::Translation,
+diff --git a/actionpack/lib/action_dispatch/http/parameters.rb b/actionpack/lib/action_dispatch/http/parameters.rb
+index 20c24ddd..a4ecec7 100644
+--- a/actionpack/lib/action_dispatch/http/parameters.rb
++++ b/actionpack/lib/action_dispatch/http/parameters.rb
+@@ -4,6 +4,9 @@
+ module ActionDispatch
+   module Http
+     module Parameters
++      # Invoca Patch - strip string parameters patch, methods implemented in ActionController::Base
++      attr_accessor :do_not_strip_string_parameters
++
+       def initialize(env)
+         super
+         @symbolized_path_params = nil
+@@ -12,12 +15,14 @@ def initialize(env)
+       # Returns both GET and POST \parameters in a single hash.
+       def parameters
+         @env["action_dispatch.request.parameters"] ||= begin
++          @do_not_strip_string_parameters ||= [] # Invoca Patch
+           params = begin
+             request_parameters.merge(query_parameters)
+           rescue EOFError
+             query_parameters.dup
+           end
+           params.merge!(path_parameters)
++          strip_string_params!(params) # Invoca Patch
+           params.with_indifferent_access
+         end
+       end
+@@ -50,6 +55,18 @@ def reset_parameters #:nodoc:
+ 
+     private
+ 
++      # Invoca Patch
++      def strip_string_params!(value_to_strip)
++        case value_to_strip
++          when String
++            value_to_strip.strip!
++          when Hash
++            value_to_strip.each{ |key, value| strip_string_params!(value) if !key.respond_to?(:to_sym) || key.to_sym.not_in?(do_not_strip_string_parameters) }
++          when Array
++            value_to_strip.each{ |value| strip_string_params!(value) }
++        end
++      end
++
+       # Convert nested Hash to HashWithIndifferentAccess
+       # and UTF-8 encode both keys and values in nested Hash.
+       #
+diff --git a/actionpack/lib/action_view/helpers/form_helper.rb b/actionpack/lib/action_view/helpers/form_helper.rb
+index b8d23ee..7091ccd 100644
+--- a/actionpack/lib/action_view/helpers/form_helper.rb
++++ b/actionpack/lib/action_view/helpers/form_helper.rb
+@@ -432,7 +432,12 @@ def form_for(record, options = {}, &block)
+         html_options[:authenticity_token] = options.delete(:authenticity_token)
+ 
+         builder = instantiate_builder(object_name, object, options)
+-        output  = capture(builder, &block)
++        output = # Invoca Patch
++          if builder.respond_to?(:replace_content)
++            builder.replace_content( capture(builder, &block) )
++          else
++            capture(builder, &block)
++          end
+         html_options[:multipart] ||= builder.multipart?
+ 
+         form_tag(options[:url] || {}, html_options) { output }
+@@ -696,7 +701,12 @@ def apply_form_for_options!(record, object, options) #:nodoc:
+       # to prevent fields_for from rendering it automatically.
+       def fields_for(record_name, record_object = nil, options = {}, &block)
+         builder = instantiate_builder(record_name, record_object, options)
+-        capture(builder, &block)
++        # Invoca Patch
++        if builder.respond_to?(:replace_content)
++          concat builder.replace_content( capture(builder, &block) )
++        else
++          capture(builder, &block)
++        end
+       end
+ 
+       # Returns a label tag tailored for labelling an input field for a specified attribute (identified by +method+) on an object
+diff --git a/actionpack/lib/action_view/helpers/javascript_helper.rb b/actionpack/lib/action_view/helpers/javascript_helper.rb
+index edff98dd..4b98a81 100644
+--- a/actionpack/lib/action_view/helpers/javascript_helper.rb
++++ b/actionpack/lib/action_view/helpers/javascript_helper.rb
+@@ -85,7 +85,7 @@ def button_to_function(name, function=nil, html_options={})
+           "See http://guides.rubyonrails.org/working_with_javascript_in_rails.html#unobtrusive-javascript"
+         ActiveSupport::Deprecation.warn message
+ 
+-        onclick = "#{"#{html_options[:onclick]}; " if html_options[:onclick]}#{function};"
++        onclick = "#{"#{html_options[:onclick]}; " if html_options[:onclick]}#{function};".html_safe # Invoca Patch - TODO ORabani - 'button_to_function' method will be deprecated in Rails 4.1
+ 
+         tag(:input, html_options.merge(:type => 'button', :value => name, :onclick => onclick))
+       end
+@@ -107,7 +107,7 @@ def link_to_function(name, function, html_options={})
+           "See http://guides.rubyonrails.org/working_with_javascript_in_rails.html#unobtrusive-javascript"
+         ActiveSupport::Deprecation.warn message
+ 
+-        onclick = "#{"#{html_options[:onclick]}; " if html_options[:onclick]}#{function}; return false;"
++        onclick = "#{"#{html_options[:onclick]}; " if html_options[:onclick]}#{function}; return false;".html_safe # Invoca Patch - TODO ORabani - 'link_to_function' method will be deprecated in Rails 4.1
+         href = html_options[:href] || '#'
+ 
+         content_tag(:a, name, html_options.merge(:href => href, :onclick => onclick))
+diff --git a/actionpack/lib/action_view/routing_url_for.rb b/actionpack/lib/action_view/routing_url_for.rb
+index f10e7e8..673565c 100644
+--- a/actionpack/lib/action_view/routing_url_for.rb
++++ b/actionpack/lib/action_view/routing_url_for.rb
+@@ -80,6 +80,13 @@ def url_for(options = nil)
+       when nil, Hash
+         options ||= {}
+         options = { :only_path => options[:host].nil? }.merge!(options.symbolize_keys)
++        # Invoca Patch - check whether controller is defined or not to make this work when url_for is overwritten in a non-controller class
++        if defined?(controller) && controller.respond_to?(:rewrite_options, true)
++          options = controller.send( :rewrite_options, options )
++        else # either it was called through a chain from a non-controller class or the rewrite_options was not defined
++          # want to use the full path in this case
++          options[:only_path] = false
++        end
+         super
+       when :back
+         _back_url
+@@ -89,8 +96,16 @@ def url_for(options = nil)
+     end
+ 
+     def url_options #:nodoc:
+-      return super unless controller.respond_to?(:url_options)
+-      controller.url_options
++      # Invoca patch - check whether controller is defined or not to make this work when url_for is overwritten in a non-controller class
++      if defined?(controller)
++        if controller.respond_to?(:url_options)
++          controller.url_options
++        else # controller does not have url_options
++          return super
++        end
++      else # controller is not defined; e.g. when url_for is overwritten in a model
++        return super
++      end
+     end
+ 
+     def _routes_context #:nodoc:
+diff --git a/activemodel/lib/active_model/errors.rb b/activemodel/lib/active_model/errors.rb
+index 050838b..2984c74 100644
+--- a/activemodel/lib/active_model/errors.rb
++++ b/activemodel/lib/active_model/errors.rb
+@@ -322,7 +322,8 @@ def add_on_empty(attributes, options = {})
+     def add_on_blank(attributes, options = {})
+       Array(attributes).each do |attribute|
+         value = @base.send(:read_attribute_for_validation, attribute)
+-        add(attribute, :blank, options) if value.blank?
++        # Invoca Patch - take into account the :allow_nil option
++        add(attribute, :blank, options) if value.blank? && !(value.nil? && options[:allow_nil])
+       end
+     end
+ 
+diff --git a/activerecord/lib/active_record/connection_adapters/abstract/schema_definitions.rb b/activerecord/lib/active_record/connection_adapters/abstract/schema_definitions.rb
+index 8bf020a..a2e3168 100644
+--- a/activerecord/lib/active_record/connection_adapters/abstract/schema_definitions.rb
++++ b/activerecord/lib/active_record/connection_adapters/abstract/schema_definitions.rb
+@@ -226,7 +226,8 @@ def remove_column(name)
+         @columns_hash.delete name.to_s
+       end
+ 
+-      [:string, :text, :integer, :float, :decimal, :datetime, :timestamp, :time, :date, :binary, :boolean].each do |column_type|
++      # Invoca patch - add 'varbinary'
++      [:string, :text, :integer, :float, :decimal, :datetime, :timestamp, :time, :date, :binary, :boolean, :varbinary].each do |column_type|
+         define_method column_type do |*args|
+           options = args.extract_options!
+           column_names = args
+diff --git a/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb b/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb
+index 246d2b6..f146c85 100644
+--- a/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb
++++ b/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb
+@@ -695,7 +695,10 @@ def type_to_sql(type, limit = nil, precision = nil, scale = nil) #:nodoc:
+       end
+ 
+       def add_column_options!(sql, options) #:nodoc:
+-        sql << " DEFAULT #{quote(options[:default], options[:column])}" if options_include_default?(options)
++        # Invoca Patch - MySQL doesn't allow DEFAULT NULL with NOT NULL -- it's implied when DEFAULT omitted
++        if options_include_default?(options) && !options[:default].nil?
++          sql << " DEFAULT #{quote(options[:default], options[:column])}"
++        end
+         # must explicitly check for :null to allow change_column to work on migrations
+         if options[:null] == false
+           sql << " NOT NULL"
+@@ -772,7 +775,8 @@ def quoted_columns_for_index(column_names, options = {})
+         end
+ 
+         def options_include_default?(options)
+-          options.include?(:default) && !(options[:null] == false && options[:default].nil?)
++          # Invoca Patch - allow DEFAULT NULL statements
++          options.include?(:default) # && !(options[:null] == false && options[:default].nil?)
+         end
+ 
+         def add_index_options(table_name, column_name, options = {})
+@@ -815,8 +819,11 @@ def add_index_options(table_name, column_name, options = {})
+           if index_name.length > max_index_length
+             raise ArgumentError, "Index name '#{index_name}' on table '#{table_name}' is too long; the limit is #{max_index_length} characters"
+           end
+-          if index_name_exists?(table_name, index_name, false)
+-            raise ArgumentError, "Index name '#{index_name}' on table '#{table_name}' already exists"
++          # Invoca Patch
++          unless (options.key?(:check_for_existence) || options[:check_for_existence])
++            if index_name_exists?(table_name, index_name, false)
++              raise ArgumentError, "Index name '#{index_name}' on table '#{table_name}' already exists"
++            end
+           end
+           index_columns = quoted_columns_for_index(column_names, options).join(", ")
+ 
+diff --git a/activerecord/lib/active_record/connection_adapters/abstract_mysql_adapter.rb b/activerecord/lib/active_record/connection_adapters/abstract_mysql_adapter.rb
+index 8c0b118..7cfa4ad 100755
+--- a/activerecord/lib/active_record/connection_adapters/abstract_mysql_adapter.rb
++++ b/activerecord/lib/active_record/connection_adapters/abstract_mysql_adapter.rb
+@@ -91,7 +91,7 @@ def extract_limit(sql_type)
+             when /medium/i
+               16777215
+             when /long/i
+-              2147483647 # mysql only allows 2^31-1, not 2^32-1, somewhat inconsistently with the tiny/medium/normal cases
++              4294967295 # Invoca Patch - double the size for long
+             else
+               super # we could return 65535 here, but we leave it undecorated by default
+             end
+@@ -137,18 +137,20 @@ def missing_default_forged_as_empty_string?(default)
+       QUOTED_TRUE, QUOTED_FALSE = '1', '0'
+ 
+       NATIVE_DATABASE_TYPES = {
+-        :primary_key => "int(11) DEFAULT NULL auto_increment PRIMARY KEY",
+-        :string      => { :name => "varchar", :limit => 255 },
+-        :text        => { :name => "text" },
+-        :integer     => { :name => "int", :limit => 4 },
+-        :float       => { :name => "float" },
+-        :decimal     => { :name => "decimal" },
+-        :datetime    => { :name => "datetime" },
+-        :timestamp   => { :name => "datetime" },
+-        :time        => { :name => "time" },
+-        :date        => { :name => "date" },
+-        :binary      => { :name => "blob" },
+-        :boolean     => { :name => "tinyint", :limit => 1 }
++        :primary_key              => "int auto_increment PRIMARY KEY",
++        :primary_key_no_increment => "int(11) PRIMARY KEY", # Invoca Patch
++        :string                   => { :name => "varchar", :limit => 255 },
++        :text                     => { :name => "text" },
++        :integer                  => { :name => "int", :limit => 4 },
++        :float                    => { :name => "float" },
++        :decimal                  => { :name => "decimal" },
++        :datetime                 => { :name => "datetime" },
++        :timestamp                => { :name => "datetime" },
++        :time                     => { :name => "time" },
++        :date                     => { :name => "date" },
++        :binary                   => { :name => "blob" },
++        :boolean                  => { :name => "tinyint", :limit => 1 },
++        :varbinary                => { :name => "varbinary", :limit=> 255 } # Invoca Patch
+       }
+ 
+       INDEX_TYPES  = [:fulltext, :spatial]
+@@ -238,7 +240,8 @@ def error_number(exception) # :nodoc:
+       # QUOTING ==================================================
+ 
+       def quote(value, column = nil)
+-        if value.kind_of?(String) && column && column.type == :binary && column.class.respond_to?(:string_to_binary)
++        # Invoca Patch - account for 'varbinary' type
++        if value.kind_of?(String) && column && [:binary, :varbinary].include?(column.type) && column.class.respond_to?(:string_to_binary)
+           s = column.class.string_to_binary(value).unpack("H*")[0]
+           "x'#{s}'"
+         elsif value.kind_of?(BigDecimal)
+diff --git a/activerecord/lib/active_record/connection_adapters/column.rb b/activerecord/lib/active_record/connection_adapters/column.rb
+index 37620ee..e8063e5 100644
+--- a/activerecord/lib/active_record/connection_adapters/column.rb
++++ b/activerecord/lib/active_record/connection_adapters/column.rb
+@@ -64,6 +64,7 @@ def klass
+         when :date                        then Date
+         when :text, :string, :binary      then String
+         when :boolean                     then Object
++        when :varbinary                   then String # Invoca Patch
+         end
+       end
+ 
+@@ -128,6 +129,7 @@ def type_cast_code(var_name)
+         when :hstore               then "#{klass}.string_to_hstore(#{var_name})"
+         when :inet, :cidr          then "#{klass}.string_to_cidr(#{var_name})"
+         when :json                 then "#{klass}.string_to_json(#{var_name})"
++        when :varbinary            then "#{klass}.binary_to_string(#{var_name})" # Invoca Patch
+         else var_name
+         end
+       end
+@@ -206,6 +208,8 @@ def value_to_integer(value)
+           case value
+           when TrueClass, FalseClass
+             value ? 1 : 0
++          when ActiveSupport::OrderedHash # Invoca Patch
++            value.size
+           else
+             value.to_i rescue nil
+           end
+@@ -313,6 +317,8 @@ def simplified_type(field_type)
+             :date
+           when /clob/i, /text/i
+             :text
++          when /varbinary/i # Invoca Patch
++            :varbinary
+           when /blob/i, /binary/i
+             :binary
+           when /char/i, /string/i
+diff --git a/activerecord/lib/active_record/fixtures.rb b/activerecord/lib/active_record/fixtures.rb
+index 48240b4..710da05e 100644
+--- a/activerecord/lib/active_record/fixtures.rb
++++ b/activerecord/lib/active_record/fixtures.rb
+@@ -4,6 +4,7 @@
+ require 'active_support/dependencies'
+ require 'active_record/fixture_set/file'
+ require 'active_record/errors'
++require 'shellwords' # Invoca Patch - there are many patches throughout this file, refer to a file diff for complete changes
+ 
+ module ActiveRecord
+   class FixtureClassNotFound < ActiveRecord::ActiveRecordError #:nodoc:
+@@ -376,6 +377,7 @@ class FixtureSet
+     #++
+ 
+     MAX_ID = 2 ** 30 - 1
++    FIXTURE_REALMS = [:default, :sample_data]
+ 
+     @@all_cached_fixtures = Hash.new { |h,k| h[k] = {} }
+ 
+@@ -469,14 +471,16 @@ def self.create_fixtures(fixtures_directory, fixture_set_names, class_names = {}
+ 
+           connection.transaction(:requires_new => true) do
+             fixture_sets.each do |fs|
+-              conn = fs.model_class.respond_to?(:connection) ? fs.model_class.connection : connection
+-              table_rows = fs.table_rows
++              conn = fs.model_class.try(:connection) || connection
+ 
+-              table_rows.keys.each do |table|
+-                conn.delete "DELETE FROM #{conn.quote_table_name(table)}", 'Fixture Delete'
++              fs.table_rows.keys.each do |table_name|
++                conn.delete "DELETE FROM #{conn.quote_table_name(table_name)}", 'Fixture Delete'
+               end
++            end
+ 
+-              table_rows.each do |fixture_set_name, rows|
++            fixture_sets.each do |fs|
++              conn = fs.model_class.try(:connection) || connection
++              fs.table_rows.each do |fixture_set_name, rows|
+                 rows.each do |row|
+                   conn.insert_fixture(row, fixture_set_name)
+                 end
+@@ -840,6 +844,9 @@ def run_in_transaction?
+         !self.class.uses_transaction?(method_name)
+     end
+ 
++    @@active_fixture ||= :none
++    @@current_fixture_realm = :default
++
+     def setup_fixtures
+       return if ActiveRecord::Base.configurations.blank?
+ 
+@@ -851,23 +858,49 @@ def setup_fixtures
+       @fixture_connections = []
+       @@already_loaded_fixtures ||= {}
+ 
+-      # Load fixtures once and begin transaction.
++      if @@current_fixture_realm != fixture_realm
++        @@current_fixture_realm = fixture_realm
++        db_connect(@@current_fixture_realm)
++      end
++
++      if !@@already_loaded_fixtures[self.class].nil?
++        @loaded_fixtures = @@already_loaded_fixtures[self.class]
++      else
++        ActiveRecord::Fixtures.reset_cache
++        @loaded_fixtures ||= (marshal_hash || create_fixtures_from_yaml)
++        @@already_loaded_fixtures[self.class] = @loaded_fixtures
++      end
++
+       if run_in_transaction?
+-        if @@already_loaded_fixtures[self.class]
+-          @loaded_fixtures = @@already_loaded_fixtures[self.class]
+-        else
+-          @loaded_fixtures = load_fixtures
+-          @@already_loaded_fixtures[self.class] = @loaded_fixtures
+-        end
+         @fixture_connections = enlist_fixture_connections
+         @fixture_connections.each do |connection|
+           connection.begin_transaction joinable: false
+         end
+-      # Load fixtures for every test.
+       else
+-        ActiveRecord::FixtureSet.reset_cache
+-        @@already_loaded_fixtures[self.class] = nil
+-        @loaded_fixtures = load_fixtures
++        @@already_loaded_fixtures[self.class] = {}
++      end
++
++      def create_fixtures_from_yaml
++        fixtures = Fixtures.create_fixtures(fixture_path, fixture_table_names, fixture_class_names)
++        Hash[fixtures.map { |f| [f.name, f] }]
++      end
++
++      def marshal_hash
++        begin
++          marshal_hash = {}
++          marshal_load = Marshal.load(File.read("#{fixture_path}default.marshal"))
++          marshal_load.each do |yaml_file, (klass, fixtures)|
++            fixture_hash = {}
++            fixtures.each do |fixture_sym, id|
++              fixture_hash[fixture_sym] = Fixture.new({"id" => id}, klass._?.constantize)
++            end
++            marshal_hash[yaml_file] = fixture_hash
++          end
++          marshal_hash
++        rescue Exception => ex
++          puts "Error loading Marshal file #{fixture_path}default.marshal: #{ex}"
++          nil
++        end
+       end
+ 
+       # Instantiate fixtures for every test if requested.
+@@ -894,11 +927,45 @@ def enlist_fixture_connections
+       ActiveRecord::Base.connection_handler.connection_pool_list.map(&:connection)
+     end
+ 
+-    private
+-      def load_fixtures
+-        fixtures = ActiveRecord::FixtureSet.create_fixtures(fixture_path, fixture_table_names, fixture_class_names)
+-        Hash[fixtures.map { |f| [f.name, f] }]
++    def load_fixtures
++      Fixtures::FIXTURE_REALMS.each do |fixture_name|
++        db_connect(fixture_name)
++
++        dump_file_name = "#{fixture_path}/#{fixture_name}.sql"
++        File.exists?(dump_file_name) or raise "load_fixtures: Could not find #{dump_file_name}"
++        load_mysql_dump(dump_file_name)
+       end
++    end
++
++    private
++
++    def db_connect(fixture_realm_sym)
++      current_connection_handler = ActiveRecord::Base.connection_handler
++      current_database_spec = current_connection_handler.retrieve_connection_pool(ActiveRecord::Base).spec
++      new_connection_handler = ActiveRecord::ConnectionAdapters::ConnectionHandler.new
++      ActiveRecord::Base.connection_handler = new_connection_handler
++      new_database_name = ActiveRecord::Base.configurations["test#{"_" + fixture_realm_sym.to_s if fixture_realm_sym != :default}"]['database']
++      new_database_config = current_database_spec.config.merge(:database => new_database_name)
++      new_database_spec = current_database_spec.class.new(new_database_config, current_database_spec.adapter_method)
++      ActiveRecord::Base.establish_connection(new_database_spec.config)
++      ActiveRecord::Base.connection
++    end
++
++    # Possible alternative to the above method
++    # def db_connect(fixture_realm_sym)
++    #   ActiveRecord::Base.establish_connection("test#{'_sample_data' unless fixture_sym == :default}")
++    # end
++
++    def load_mysql_dump dump_filename
++      raise "Cannot be used in production!" if Rails.env == 'production'
++      config = ActiveRecord::Base.connection.config
++      dump_cmd = "mysql --user=#{Shellwords.shellescape(config[:username])} --password=#{Shellwords.shellescape(config[:password])} #{Shellwords.shellescape(config[:database])} < #{Shellwords.shellescape(dump_filename)}"
++      system(dump_cmd) or raise("Loading mysql dump failed: #{dump_cmd.inspect} resulted in an error")
++      # IO.readlines(dump_filename).join.split(";\n").each do |statement|
++      #   ActiveRecord::Base.connection.execute(statement)
++      # end
++      nil
++    end
+ 
+       # for pre_loaded_fixtures, only require the classes once. huge speed improvement
+       @@required_fixture_classes = false
+diff --git a/activerecord/lib/active_record/log_subscriber.rb b/activerecord/lib/active_record/log_subscriber.rb
+index 61e5c12..437a1d7 100644
+--- a/activerecord/lib/active_record/log_subscriber.rb
++++ b/activerecord/lib/active_record/log_subscriber.rb
+@@ -50,6 +50,14 @@ def sql(event)
+         }.inspect
+       end
+ 
++      if rows = payload[:rows]
++        name += " rows: #{rows}"
++      end
++
++      if last_id = payload[:last_id]
++        name += " last_id: #{last_id}"
++      end
++
+       if odd?
+         name = color(name, CYAN, true)
+         sql  = color(sql, nil, true)
+diff --git a/activerecord/lib/active_record/railties/databases.rake b/activerecord/lib/active_record/railties/databases.rake
+index 2042734..5ea5b55 100644
+--- a/activerecord/lib/active_record/railties/databases.rake
++++ b/activerecord/lib/active_record/railties/databases.rake
+@@ -282,16 +282,17 @@ db_namespace = namespace :db do
+   end
+ 
+   namespace :structure do
+-    desc 'Dump the database structure to db/structure.sql. Specify another file with DB_STRUCTURE=db/my_structure.sql'
++    desc 'Dump the database structure to db/schema.sql. Specify another file with DB_STRUCTURE=db/my_structure.sql'
+     task :dump => [:environment, :load_config] do
+-      filename = ENV['DB_STRUCTURE'] || File.join(ActiveRecord::Tasks::DatabaseTasks.db_dir, "structure.sql")
++      # Invoca Patch - change 'structure.sql' to 'schema.sql'
++      filename = ENV['DB_STRUCTURE'] || File.join(ActiveRecord::Tasks::DatabaseTasks.db_dir, "schema.sql")
+       current_config = ActiveRecord::Tasks::DatabaseTasks.current_config
+       ActiveRecord::Tasks::DatabaseTasks.structure_dump(current_config, filename)
+ 
+       if ActiveRecord::Base.connection.supports_migrations? &&
+           ActiveRecord::SchemaMigration.table_exists?
+         File.open(filename, "a") do |f|
+-          f.puts ActiveRecord::Base.connection.dump_schema_information
++          f.puts ActiveRecord::Base.connection.dump_schema_information.gsub(/AUTO_INCREMENT=\d+ /,'') # Invoca Patch - need this for the custom data type patch in the abstract_mysql_adapter
+         end
+       end
+       db_namespace['structure:dump'].reenable
+@@ -299,9 +300,16 @@ db_namespace = namespace :db do
+ 
+     # desc "Recreate the databases from the structure.sql file"
+     task :load => [:environment, :load_config] do
+-      filename = ENV['DB_STRUCTURE'] || File.join(ActiveRecord::Tasks::DatabaseTasks.db_dir, "structure.sql")
++      # Invoca Patch - change 'structure.sql' to 'schema.sql'
++      filename = ENV['DB_STRUCTURE'] || File.join(ActiveRecord::Tasks::DatabaseTasks.db_dir, "schema.sql")
+       current_config = ActiveRecord::Tasks::DatabaseTasks.current_config
+-      ActiveRecord::Tasks::DatabaseTasks.structure_load(current_config, filename)
++      # Invoca Patch - check that file exists and load file
++      File.exists?(filename) or abort %{#{filename} doesn't exist yet. Run "rake db:migrate" to create it then try again. If you do not intend to use a database, you should instead alter #{Rails.root}/config/boot.rb to limit the frameworks that will be loaded}
++      command = "mysql '-u#{config["username"]}' '-p#{config["password"]}' '#{config["database"]}' < '#{filename}'"
++      puts command if ENV['verbose'] != 'false'
++      system( command )
++      $?.success? or raise "#{task.name} failed executing `#{command}`"
++      # ActiveRecord::Tasks::DatabaseTasks.structure_load(current_config, filename)
+     end
+ 
+     task :load_if_sql => ['db:create', :environment] do
+diff --git a/activerecord/lib/active_record/relation/calculations.rb b/activerecord/lib/active_record/relation/calculations.rb
+index 6e13938..39d0e5d 100644
+--- a/activerecord/lib/active_record/relation/calculations.rb
++++ b/activerecord/lib/active_record/relation/calculations.rb
+@@ -219,7 +219,14 @@ def perform_calculation(operation, column_name, options = {})
+       end
+ 
+       if group_values.any?
+-        execute_grouped_calculation(operation, column_name, distinct)
++        # Invoca Patch - if simple count option is present just return the count of records
++        # I.e. Account.group(:status).count => { :approved => 10, :declined => 15 }
++        #      Account.group(:status).count(simple_count => true) => 2
++        if options[:simple_count]
++          execute_grouped_calculation(operation, column_name, distinct, true)
++        else
++          execute_grouped_calculation(operation, column_name, distinct)
++        end
+       else
+         execute_simple_calculation(operation, column_name, distinct)
+       end
+@@ -269,7 +276,7 @@ def execute_simple_calculation(operation, column_name, distinct) #:nodoc:
+       type_cast_calculated_value(value, column, operation)
+     end
+ 
+-    def execute_grouped_calculation(operation, column_name, distinct) #:nodoc:
++    def execute_grouped_calculation(operation, column_name, distinct, simple_count = false) #:nodoc: # Invoca Patch
+       group_attrs = group_values
+ 
+       if group_attrs.first.respond_to?(:to_sym)
+@@ -315,7 +322,16 @@ def execute_grouped_calculation(operation, column_name, distinct) #:nodoc:
+       relation.group_values  = group
+       relation.select_values = select_values
+ 
+-      calculated_data = @klass.connection.select_all(relation, nil, bind_values)
++      calculated_data = nil
++
++      # Invoca Patch - remove "order by" clauses which cause issues with complicated scopes and it's irrelevant for the records count
++      if simple_count
++        relation.order_values = []
++        calculated_data = @klass.connection.select_all(relation)
++        return calculated_data.count
++      end
++
++      calculated_data ||= @klass.connection.select_all(relation)
+ 
+       if association
+         key_ids     = calculated_data.collect { |row| row[group_aliases.first] }
+diff --git a/activesupport/lib/active_support/core_ext/time/conversions.rb b/activesupport/lib/active_support/core_ext/time/conversions.rb
+index 48654eb..5f04f7f 100644
+--- a/activesupport/lib/active_support/core_ext/time/conversions.rb
++++ b/activesupport/lib/active_support/core_ext/time/conversions.rb
+@@ -45,7 +45,9 @@ class Time
+   #   Time::DATE_FORMATS[:short_ordinal]  = ->(time) { time.strftime("%B #{time.day.ordinalize}") }
+   def to_formatted_s(format = :default)
+     if formatter = DATE_FORMATS[format]
+-      formatter.respond_to?(:call) ? formatter.call(self).to_s : strftime(formatter)
++      # Invoca Patch
++      instance = format == :db && ActiveRecord::Base.default_timezone == :utc ? dup.utc : self # .utc mutates the original Time object!
++      formatter.respond_to?(:call) ? formatter.call(instance).to_s : instance.strftime(formatter)
+     else
+       to_default_s
+     end
+diff --git a/activesupport/lib/active_support/testing/setup_and_teardown.rb b/activesupport/lib/active_support/testing/setup_and_teardown.rb
+index a65148c..4c1c6e7 100644
+--- a/activesupport/lib/active_support/testing/setup_and_teardown.rb
++++ b/activesupport/lib/active_support/testing/setup_and_teardown.rb
+@@ -27,6 +27,8 @@ def before_setup
+       end
+ 
+       def after_teardown
++        # TODO Rails4 ORabani - walk through a test(s) to see if test-unit teardowns cause any exceptions that aren't caught, causing subsequent teardown callbacks to not run
++        # this can cause transactional fixtures to not be rolled back
+         run_callbacks :teardown
+         super
+       end
+diff --git a/railties/lib/rails/version.rb b/railties/lib/rails/version.rb
+index 564de81..3e68c15 100644
+--- a/railties/lib/rails/version.rb
++++ b/railties/lib/rails/version.rb
+@@ -4,6 +4,7 @@ module VERSION
+     MINOR = 0
+     TINY  = 13
+     PRE   = nil
++    COMPANY = "Invoca"
+ 
+     STRING = [MAJOR, MINOR, TINY, PRE].compact.join(".")
+   end
+diff --git a/version.rb b/version.rb
+index 564de81..3e68c15 100644
+--- a/version.rb
++++ b/version.rb
+@@ -4,6 +4,7 @@ module VERSION
+     MINOR = 0
+     TINY  = 13
+     PRE   = nil
++    COMPANY = "Invoca"
+ 
+     STRING = [MAJOR, MINOR, TINY, PRE].compact.join(".")
+   end
