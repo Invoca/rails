@@ -4,8 +4,7 @@ Note: Invoca_4.0.13_patches.diff contains all the patches that still need to be 
 
 OK (patch will merge fine)
 ####################################################################################
-- activerecord/lib/active_record/fixtures.rb
-  - Doesn't appear like it'll be a problem (just might need to rearrange some stuff)
+
 
 Not ok (code changed, will need to rethink patch)
 ####################################################################################
@@ -34,6 +33,7 @@ Applied in branch invoca-4.2.7.1-TECH-1303
 - actionpack/lib/action_controller/base.rb
 - actionpack/lib/action_dispatch/http/parameters.rb
 - activerecord/lib/active_record/relation/calculations.rb
+- activerecord/lib/active_record/fixtures.rb
 
 Skipped
 ####################################################################################
