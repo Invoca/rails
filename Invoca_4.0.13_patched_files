@@ -2,19 +2,6 @@ RAILS
 Note: Invoca_4.0.13_patches.diff contains all the patches that still need to be applied
       Invoca_4.0.13_patches.diff.orig is all Rails 4.0 patches
 
-OK (patch will merge fine)
-####################################################################################
-
-Not ok (code changed, will need to rethink patch)
-####################################################################################
-- activerecord/lib/active_record/connection_adapters/abstract_mysql_adapter.rb
-  - code changed for changing 'long' limit
---
-  OK - activerecord/lib/active_record/connection_adapters/abstract/schema_definitions.rb
-  NOT OK - activerecord/lib/active_record/connection_adapters/abstract_mysql_adapter.rb
-    - quote method format changed a little, but the NATIVE_DATABASE_TYPES is ok
-  NOT OK - activerecord/lib/active_record/connection_adapters/column.rb
-
 Applied in branch invoca-4.2.7.1-TECH-1303
 ####################################################################################
 - version.rb
@@ -30,6 +17,16 @@ Applied in branch invoca-4.2.7.1-TECH-1303
 - activerecord/lib/active_record/fixtures.rb
 - activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb
 - activerecord/lib/active_record/railties/databases.rake
+
+-- The following files were implemented but there still may be some errors that need to be worked through since the new data type classes were implemented in activerecord.
+  - activerecord/lib/active_record/connection_adapters/abstract/schema_definitions.rb
+  - activerecord/lib/active_record/connection_adapters/abstract_mysql_adapter.rb
+  - activerecord/lib/active_record/connection_adapters/column.rb
+
+  - Created activerecord/lib/active_record/type/varbinary.rb
+  - Add Varbinary type to 
+    - activerecord/lib/active_record/connection_adapters/abstract_adapter.rb
+    - activerecord/lib/active_record/type.rb
 
 Skipped
 ####################################################################################

@@ -403,6 +403,7 @@ module ActiveRecord
         register_class_with_limit m, %r(boolean)i,   Type::Boolean
         register_class_with_limit m, %r(char)i,      Type::String
         register_class_with_limit m, %r(binary)i,    Type::Binary
+        register_class_with_limit m, %r(varbinary)i, Type::Varbinary
         register_class_with_limit m, %r(text)i,      Type::Text
         register_class_with_limit m, %r(date)i,      Type::Date
         register_class_with_limit m, %r(time)i,      Type::Time

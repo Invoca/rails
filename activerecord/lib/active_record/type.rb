@@ -6,6 +6,7 @@ require 'active_record/type/value'
 
 require 'active_record/type/big_integer'
 require 'active_record/type/binary'
+require 'active_record/type/varbinary'
 require 'active_record/type/boolean'
 require 'active_record/type/date'
 require 'active_record/type/date_time'
