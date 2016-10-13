@@ -15,8 +15,6 @@ Not ok (code changed, will need to rethink patch)
   NOT OK - activerecord/lib/active_record/connection_adapters/abstract_mysql_adapter.rb
     - quote method format changed a little, but the NATIVE_DATABASE_TYPES is ok
   NOT OK - activerecord/lib/active_record/connection_adapters/column.rb
-- activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb
-  - 'add_column_options!' method changed/removed
 - activerecord/lib/active_record/railties/databases.rake
   - load task changed a bit
 
@@ -34,6 +32,7 @@ Applied in branch invoca-4.2.7.1-TECH-1303
 - actionpack/lib/action_dispatch/http/parameters.rb
 - activerecord/lib/active_record/relation/calculations.rb
 - activerecord/lib/active_record/fixtures.rb
+- activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb
 
 Skipped
 ####################################################################################

@@ -950,8 +950,11 @@ module ActiveRecord
         if index_name.length > max_index_length
           raise ArgumentError, "Index name '#{index_name}' on table '#{table_name}' is too long; the limit is #{max_index_length} characters"
         end
-        if table_exists?(table_name) && index_name_exists?(table_name, index_name, false)
-          raise ArgumentError, "Index name '#{index_name}' on table '#{table_name}' already exists"
+        # Invoca Patch
+        unless (options.key?(:check_for_existence) || options[:check_for_existence])
+          if table_exists?(table_name) && index_name_exists?(table_name, index_name, false)
+            raise ArgumentError, "Index name '#{index_name}' on table '#{table_name}' already exists"
+          end
         end
         index_columns = quoted_columns_for_index(column_names, options).join(", ")
 
@@ -985,7 +988,8 @@ module ActiveRecord
         end
 
         def options_include_default?(options)
-          options.include?(:default) && !(options[:null] == false && options[:default].nil?)
+          # Invoca Patch - allow DEFAULT NULL statements
+          options.include?(:default) # && !(options[:null] == false && options[:default].nil?)
         end
 
         def index_name_for_remove(table_name, options = {})

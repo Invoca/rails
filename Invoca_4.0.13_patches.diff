@@ -12,46 +12,6 @@ index 8bf020a..a2e3168 100644
          define_method column_type do |*args|
            options = args.extract_options!
            column_names = args
-diff --git a/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb b/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb
-index 246d2b6..f146c85 100644
---- a/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb
-+++ b/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb
-@@ -695,7 +695,10 @@ def type_to_sql(type, limit = nil, precision = nil, scale = nil) #:nodoc:
-       end
- 
-       def add_column_options!(sql, options) #:nodoc:
--        sql << " DEFAULT #{quote(options[:default], options[:column])}" if options_include_default?(options)
-+        # Invoca Patch - MySQL doesn't allow DEFAULT NULL with NOT NULL -- it's implied when DEFAULT omitted
-+        if options_include_default?(options) && !options[:default].nil?
-+          sql << " DEFAULT #{quote(options[:default], options[:column])}"
-+        end
-         # must explicitly check for :null to allow change_column to work on migrations
-         if options[:null] == false
-           sql << " NOT NULL"
-@@ -772,7 +775,8 @@ def quoted_columns_for_index(column_names, options = {})
-         end
- 
-         def options_include_default?(options)
--          options.include?(:default) && !(options[:null] == false && options[:default].nil?)
-+          # Invoca Patch - allow DEFAULT NULL statements
-+          options.include?(:default) # && !(options[:null] == false && options[:default].nil?)
-         end
- 
-         def add_index_options(table_name, column_name, options = {})
-@@ -815,8 +819,11 @@ def add_index_options(table_name, column_name, options = {})
-           if index_name.length > max_index_length
-             raise ArgumentError, "Index name '#{index_name}' on table '#{table_name}' is too long; the limit is #{max_index_length} characters"
-           end
--          if index_name_exists?(table_name, index_name, false)
--            raise ArgumentError, "Index name '#{index_name}' on table '#{table_name}' already exists"
-+          # Invoca Patch
-+          unless (options.key?(:check_for_existence) || options[:check_for_existence])
-+            if index_name_exists?(table_name, index_name, false)
-+              raise ArgumentError, "Index name '#{index_name}' on table '#{table_name}' already exists"
-+            end
-           end
-           index_columns = quoted_columns_for_index(column_names, options).join(", ")
- 
 diff --git a/activerecord/lib/active_record/connection_adapters/abstract_mysql_adapter.rb b/activerecord/lib/active_record/connection_adapters/abstract_mysql_adapter.rb
 index 8c0b118..7cfa4ad 100755
 --- a/activerecord/lib/active_record/connection_adapters/abstract_mysql_adapter.rb

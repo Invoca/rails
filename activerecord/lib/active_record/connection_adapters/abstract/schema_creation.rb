@@ -81,7 +81,10 @@ module ActiveRecord
           end
 
           def add_column_options!(sql, options)
-            sql << " DEFAULT #{quote_value(options[:default], options[:column])}" if options_include_default?(options)
+            # Invoca Patch - MySQL doesn't allow DEFAULT NULL with NOT NULL -- it's implied when DEFAULT omitted
+            if options_include_default?(options) && !options[:default].nil?
+              sql << " DEFAULT #{quote_value(options[:default], options[:column])}"
+            end
             # must explicitly check for :null to allow change_column to work on migrations
             if options[:null] == false
               sql << " NOT NULL"
