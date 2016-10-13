@@ -272,16 +272,17 @@ db_namespace = namespace :db do
   end
 
   namespace :structure do
-    desc 'Dump the database structure to db/structure.sql. Specify another file with DB_STRUCTURE=db/my_structure.sql'
+    desc 'Dump the database structure to db/schema.sql. Specify another file with DB_STRUCTURE=db/my_structure.sql'
     task :dump => [:environment, :load_config] do
-      filename = ENV['DB_STRUCTURE'] || File.join(ActiveRecord::Tasks::DatabaseTasks.db_dir, "structure.sql")
+      # Invoca Patch - change 'structure.sql' to 'schema.sql'
+      filename = ENV['DB_STRUCTURE'] || File.join(ActiveRecord::Tasks::DatabaseTasks.db_dir, "schema.sql")
       current_config = ActiveRecord::Tasks::DatabaseTasks.current_config
       ActiveRecord::Tasks::DatabaseTasks.structure_dump(current_config, filename)
 
       if ActiveRecord::Base.connection.supports_migrations? &&
           ActiveRecord::SchemaMigration.table_exists?
         File.open(filename, "a") do |f|
-          f.puts ActiveRecord::Base.connection.dump_schema_information
+          f.puts ActiveRecord::Base.connection.dump_schema_information.gsub(/AUTO_INCREMENT=\d+ /,'') # Invoca Patch - need this for the custom data type patch in the abstract_mysql_adapter
           f.print "\n"
         end
       end

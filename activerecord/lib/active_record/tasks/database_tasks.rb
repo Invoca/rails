@@ -203,7 +203,7 @@ module ActiveRecord
         when :ruby
           File.join(db_dir, "schema.rb")
         when :sql
-          File.join(db_dir, "structure.sql")
+          File.join(db_dir, "schema.sql") # Invoca Patch - change file name to "schema.sql" instead of default "structure.sql"
         end
       end
 
@@ -219,7 +219,13 @@ module ActiveRecord
           load(file)
         when :sql
           check_schema_file(file)
-          structure_load(configuration, file)
+          # Invoca Patch - check that file exists and load file
+          File.exists?(file) or abort %{#{file} doesn't exist yet. Run "rake db:migrate" to create it then try again. If you do not intend to use a database, you should instead alter #{Rails.root}/config/boot.rb to limit the frameworks that will be loaded}
+          command = "mysql '-u#{config["username"]}' '-p#{config["password"]}' '#{config["database"]}' < '#{file}'"
+          puts command if ENV['verbose'] != 'false'
+          system( command )
+          $?.success? or raise "load_schema_for failed executing `#{command}`"
+          # structure_load(configuration, file)
         else
           raise ArgumentError, "unknown format #{format.inspect}"
         end
