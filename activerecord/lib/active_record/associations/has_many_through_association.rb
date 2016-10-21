@@ -114,7 +114,11 @@ module ActiveRecord
         end
 
         def save_through_record(record)
-          build_through_record(record).save!
+          # Invoca patch - only save if the association has changed (see: https://github.com/rails/rails/issues/19663)
+          association = build_through_record(record)
+          if association.changed?
+            association.save!
+          end
         ensure
           @through_records.delete(record.object_id)
         end
