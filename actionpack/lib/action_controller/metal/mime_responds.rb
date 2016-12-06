@@ -206,7 +206,6 @@ module ActionController #:nodoc:
     # Be sure to check the documentation of <tt>ActionController::MimeResponds.respond_to</tt>
     # for more examples.
     # Overriding this for the Invoca Rails 4.2 upgrade
-    alias_method :original_respond_to, :respond_to
     def respond_to(*mimes, &blk)
       begin
         if block_given?
@@ -219,6 +218,7 @@ module ActionController #:nodoc:
         nil
       end
     end
+    alias_method :original_respond_to, :respond_to
 
     # A container for responses available from the current controller for
     # requests for different mime-types sent to a particular action.
