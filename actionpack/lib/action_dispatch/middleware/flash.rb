@@ -79,17 +79,25 @@ module ActionDispatch
     class FlashHash
       include Enumerable
 
+      # As part of our Rails 4.2 upgrade....
+      # ORabani - stolen from Rails 5 to overwrite the Rails 4 version
       def self.from_session_value(value) #:nodoc:
-        flash = case value
-                when FlashHash # Rails 3.1, 3.2
-                  new(value.instance_variable_get(:@flashes), value.instance_variable_get(:@used))
-                when Hash # Rails 4.0
-                  new(value['flashes'], value['discard'])
-                else
-                  new
-                end
-
-        flash.tap(&:sweep)
+        case value
+          when FlashHash # Rails 3.1, 3.2
+            flashes = value.instance_variable_get(:@flashes)
+            if discard = value.instance_variable_get(:@used)
+              flashes.except!(*discard)
+            end
+            new(flashes, flashes.keys)
+          when Hash # Rails 4.0
+            flashes = value['flashes']
+            if discard = value['discard']
+              flashes.except!(*discard)
+            end
+            new(flashes, flashes.keys)
+          else
+            new
+        end
       end
       
       # Builds a hash containing the discarded values and the hashes
