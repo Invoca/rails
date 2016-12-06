@@ -205,18 +205,18 @@ module ActionController #:nodoc:
     #
     # Be sure to check the documentation of <tt>ActionController::MimeResponds.respond_to</tt>
     # for more examples.
-    def respond_to(*mimes)
-      raise ArgumentError, "respond_to takes either types or a block, never both" if mimes.any? && block_given?
-
-      collector = Collector.new(mimes, request.variant)
-      yield collector if block_given?
-
-      if format = collector.negotiate_format(request)
-        _process_format(format)
-        response = collector.response
-        response ? response.call : render({})
-      else
-        raise ActionController::UnknownFormat
+    # Overriding this for the Invoca Rails 4.2 upgrade
+    alias_method :original_respond_to, :respond_to
+    def respond_to(*mimes, &blk)
+      begin
+        if block_given?
+          original_respond_to(*mimes, &blk)
+        else
+          original_respond_to(*mimes)
+        end
+      rescue ActionController::UnknownFormat
+        head :not_acceptable
+        nil
       end
     end
 
