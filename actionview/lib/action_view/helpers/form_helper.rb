@@ -458,7 +458,8 @@ module ActionView
 
         as = options[:as]
         namespace = options[:namespace]
-        action, method = object.respond_to?(:persisted?) && object.persisted? ? [:edit, :patch] : [:new, :post]
+        # Invoca Patch: use the :put method for the :edit action, as opposed to :patch
+        action, method = object.respond_to?(:persisted?) && object.persisted? ? [:edit, :put] : [:new, :post]
         options[:html].reverse_merge!(
           class:  as ? "#{action}_#{as}" : dom_class(object, action),
           id:     (as ? [namespace, action, as] : [namespace, dom_id(object, action)]).compact.join("_").presence,
