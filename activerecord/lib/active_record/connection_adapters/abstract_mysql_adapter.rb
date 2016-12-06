@@ -405,15 +405,25 @@ module ActiveRecord
         show_variable 'collation_database'
       end
 
+      # As part of the Rails 4.2 upgrade we patched this method so
+      # that it works with the Invoca web repo's MigrationExtractor
       def tables(name = nil, database = nil, like = nil) #:nodoc:
         sql = "SHOW TABLES "
         sql << "IN #{quote_table_name(database)} " if database
         sql << "LIKE #{quote(like)}" if like
 
         execute_and_free(sql, 'SCHEMA') do |result|
-          result.collect { |field| field.first }
+          if result.nil? && @enable_logging
+            @enable_logging = false
+            disabled_logging_result = tables(name, database, like)
+            @enable_logging = true
+            disabled_logging_result
+          else
+            result.collect { |field| field.first }
+          end
         end
       end
+
       alias data_sources tables
 
       def truncate(table_name, name = nil)
