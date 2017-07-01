@@ -61,10 +61,21 @@ module ActiveRecord
 
       # Implements the ids writer method, e.g. foo.item_ids= for Foo.has_many :items
       def ids_writer(ids)
-        pk_type = reflection.primary_key_type
-        ids = Array(ids).reject { |id| id.blank? }
-        ids.map! { |i| pk_type.type_cast_from_user(i) }
-        replace(klass.find(ids).index_by { |r| r.id }.values_at(*ids))
+        pk_column = reflection.association_primary_key
+        pk_type = klass.type_for_attribute(pk_column)
+        ids = Array(ids).reject(&:blank?).map do |i|
+          pk_type.type_cast_from_user(i)
+        end
+
+        objs = klass.where(pk_column => ids).index_by do |r|
+          r.send(pk_column)
+        end.values_at(*ids).compact
+
+        if objs.size == ids.size
+          replace(objs.index_by { |r| r.send(pk_column) }.values_at(*ids))
+        else
+          klass.all.raise_record_not_found_exception!(ids, objs.size, ids.size)
+        end
       end
 
       def reset
