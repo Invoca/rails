@@ -51,12 +51,12 @@ module ActionDispatch
       # Invoca Patch
       def strip_string_params!(value_to_strip)
         case value_to_strip
-          when String
-            value_to_strip.strip!
-          when Hash
-            value_to_strip.each{ |key, value| strip_string_params!(value) if !key.respond_to?(:to_sym) || key.to_sym.not_in?(do_not_strip_string_parameters) }
-          when Array
-            value_to_strip.each{ |value| strip_string_params!(value) }
+        when String
+          value_to_strip.strip!
+        when Hash
+          value_to_strip.each { |key, value| strip_string_params!(value) if !key.respond_to?(:to_sym) || !do_not_strip_string_parameters.include?(key.to_sym) }
+        when Array
+          value_to_strip.each { |value| strip_string_params!(value) }
         end
       end
 

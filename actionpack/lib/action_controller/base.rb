@@ -202,7 +202,7 @@ module ActionController
 
     # Invoca Patch - strip string parameters methods, also used in ActionDispatch::Http::Parameters
     def self.do_not_strip_string_parameters
-      @do_not_strip_string_parameters
+      defined?(@do_not_strip_string_parameters) && @do_not_strip_string_parameters
     end
 
     def self.strip_string_parameters(except:)

@@ -82,10 +82,10 @@ module ActionView
       when nil
         # Invoca Patch - check whether controller is defined or not to make this work when url_for is overwritten in a non-controller class
         if defined?(controller) && controller.respond_to?(:rewrite_options, true)
-          options = controller.send( :rewrite_options, options )
+          options = controller.send(:rewrite_options, options)
         else # either it was called through a chain from a non-controller class or the rewrite_options was not defined
           # want to use the full path in this case
-          options[:only_path] = false
+          options = {only_path: false}
         end
 
         super(options)
@@ -101,7 +101,7 @@ module ActionView
 
         # Invoca Patch - check whether controller is defined or not to make this work when url_for is overwritten in a non-controller class
         if defined?(controller) && controller.respond_to?(:rewrite_options, true)
-          options = controller.send( :rewrite_options, options )
+          options = controller.send(:rewrite_options, options)
         else # either it was called through a chain from a non-controller class or the rewrite_options was not defined
           # want to use the full path in this case
           options[:only_path] = false
