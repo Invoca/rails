@@ -9,7 +9,7 @@ module Rails
     MINOR = 2
     TINY  = 9
     PRE   = nil
-    COMPANY = "invoca"
+    COMPANY = "Invoca"
 
     STRING = [MAJOR, MINOR, TINY, PRE].compact.join(".")
   end
