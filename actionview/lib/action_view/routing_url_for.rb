@@ -85,7 +85,7 @@ module ActionView
           options = controller.send(:rewrite_options, options)
         else # either it was called through a chain from a non-controller class or the rewrite_options was not defined
           # want to use the full path in this case
-          options = {only_path: false}
+          options = { only_path: false }
         end
 
         super(options)
