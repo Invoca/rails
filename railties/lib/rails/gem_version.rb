@@ -7,7 +7,7 @@ module Rails
   module VERSION
     MAJOR = 4
     MINOR = 2
-    TINY  = 9
+    TINY  = 10
     PRE   = nil
     COMPANY = "Invoca"
 
