@@ -52,7 +52,7 @@ module ActionDispatch
       def strip_string_params!(value_to_strip)
         case value_to_strip
         when String
-          value_to_strip.strip!
+          value_to_strip.frozen? ? value_to_strip.strip : value_to_strip.strip!
         when Hash
           value_to_strip.each do |key, value|
             if !key.respond_to?(:to_sym) || !do_not_strip_string_parameters || !do_not_strip_string_parameters.include?(key.to_sym)
