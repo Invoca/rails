@@ -49,19 +49,27 @@ module ActionDispatch
     private
 
       # Invoca Patch
+      # Recursively walks a Hash/Array/String hierarchy and strips any Strings found.
+      # Strings are stripped with strip! unless they are frozen in which casea a copy is made.
+      # Returns the original value or if copied, the copied value.
       def strip_string_params!(value_to_strip)
         case value_to_strip
         when String
-          value_to_strip.frozen? ? value_to_strip.strip : value_to_strip.strip!
+          if value_to_strip.frozen?
+            value_to_strip = value_to_strip.strip
+          else
+            value_to_strip.strip!
+          end
         when Hash
           value_to_strip.each do |key, value|
             if !key.respond_to?(:to_sym) || !do_not_strip_string_parameters || !do_not_strip_string_parameters.include?(key.to_sym)
-              strip_string_params!(value)
+              value_to_strip[key] = strip_string_params!(value)
             end
           end
         when Array
-          value_to_strip.each { |value| strip_string_params!(value) }
+          value_to_strip.each.with_index { |value, index| value_to_strip[index] = strip_string_params!(value) }
         end
+        value_to_strip
       end
 
       # Convert nested Hash to HashWithIndifferentAccess.
