@@ -225,11 +225,8 @@ module ActiveRecord
         # Invoca Patch - if simple count option is present just return the count of records
         # I.e. Account.group(:status).count => { :approved => 10, :declined => 15 }
         #      Account.group(:status).count(simple_count => true) => 2
-        if options && options[:simple_count]
-          execute_grouped_calculation(operation, column_name, distinct, true)
-        else
-          execute_grouped_calculation(operation, column_name, distinct)
-        end
+        simple_count = options && options[:simple_count]
+        execute_grouped_calculation(operation, column_name, distinct, simple_count)
       else
         execute_simple_calculation(operation, column_name, distinct)
       end
