@@ -146,9 +146,9 @@ class BaseTest < ActiveSupport::TestCase
     assert_equal(2, email.parts.length)
     assert_equal("multipart/mixed", email.mime_type)
     assert_equal("text/html", email.parts[0].mime_type)
-    assert_equal("Attachment with content", email.parts[0].body.encoded)
+    assert_equal("Attachment with content", email.parts[0].decoded)
     assert_equal("application/pdf", email.parts[1].mime_type)
-    assert_equal("VGhpcyBpcyB0ZXN0IEZpbGUgY29udGVudA==\r\n", email.parts[1].body.encoded)
+    assert_equal("This is test File content", email.parts[1].decoded)
   end
 
   test "adds the given :body as part" do
@@ -156,9 +156,9 @@ class BaseTest < ActiveSupport::TestCase
     assert_equal(2, email.parts.length)
     assert_equal("multipart/mixed", email.mime_type)
     assert_equal("text/plain", email.parts[0].mime_type)
-    assert_equal("I'm the eggman", email.parts[0].body.encoded)
+    assert_equal("I'm the eggman", email.parts[0].decoded)
     assert_equal("application/pdf", email.parts[1].mime_type)
-    assert_equal("VGhpcyBpcyB0ZXN0IEZpbGUgY29udGVudA==\r\n", email.parts[1].body.encoded)
+    assert_equal("This is test File content", email.parts[1].decoded)
   end
 
   test "can embed an inline attachment" do
@@ -316,22 +316,21 @@ class BaseTest < ActiveSupport::TestCase
 
   test "implicit multipart with attachments creates nested parts" do
     email = BaseMailer.implicit_multipart(attachments: true)
-    assert_equal("application/pdf", email.parts[0].mime_type)
-    assert_equal("multipart/alternative", email.parts[1].mime_type)
-    assert_equal("text/plain", email.parts[1].parts[0].mime_type)
-    assert_equal("TEXT Implicit Multipart", email.parts[1].parts[0].body.encoded)
-    assert_equal("text/html", email.parts[1].parts[1].mime_type)
-    assert_equal("HTML Implicit Multipart", email.parts[1].parts[1].body.encoded)
+    assert_equal(%w[ application/pdf multipart/alternative ], email.parts.map(&:mime_type).sort)
+    multipart = email.parts.detect { |p| p.mime_type == "multipart/alternative" }
+    assert_equal("text/plain", multipart.parts[0].mime_type)
+    assert_equal("TEXT Implicit Multipart", multipart.parts[0].body.encoded)
+    assert_equal("text/html", multipart.parts[1].mime_type)
+    assert_equal("HTML Implicit Multipart", multipart.parts[1].body.encoded)
   end
 
   test "implicit multipart with attachments and sort order" do
     order = ["text/html", "text/plain"]
     with_default BaseMailer, parts_order: order do
       email = BaseMailer.implicit_multipart(attachments: true)
-      assert_equal("application/pdf", email.parts[0].mime_type)
-      assert_equal("multipart/alternative", email.parts[1].mime_type)
-      assert_equal("text/plain", email.parts[1].parts[1].mime_type)
-      assert_equal("text/html", email.parts[1].parts[0].mime_type)
+      assert_equal(%w[ application/pdf multipart/alternative ], email.parts.map(&:mime_type).sort)
+      multipart = email.parts.detect { |p| p.mime_type == "multipart/alternative" }
+      assert_equal(%w[ text/html text/plain ], multipart.parts.map(&:mime_type).sort)
     end
   end
 
@@ -397,12 +396,12 @@ class BaseTest < ActiveSupport::TestCase
 
   test "explicit multipart with attachments creates nested parts" do
     email = BaseMailer.explicit_multipart(attachments: true)
-    assert_equal("application/pdf", email.parts[0].mime_type)
-    assert_equal("multipart/alternative", email.parts[1].mime_type)
-    assert_equal("text/plain", email.parts[1].parts[0].mime_type)
-    assert_equal("TEXT Explicit Multipart", email.parts[1].parts[0].body.encoded)
-    assert_equal("text/html", email.parts[1].parts[1].mime_type)
-    assert_equal("HTML Explicit Multipart", email.parts[1].parts[1].body.encoded)
+    assert_equal(%w[ application/pdf multipart/alternative ], email.parts.map(&:mime_type).sort)
+    multipart = email.parts.detect { |p| p.mime_type == "multipart/alternative" }
+    assert_equal("text/plain", multipart.parts[0].mime_type)
+    assert_equal("TEXT Explicit Multipart", multipart.parts[0].body.encoded)
+    assert_equal("text/html", multipart.parts[1].mime_type)
+    assert_equal("HTML Explicit Multipart", multipart.parts[1].body.encoded)
   end
 
   test "explicit multipart with templates" do
