@@ -223,7 +223,7 @@ module ActiveRecord
           check_schema_file(file)
           # Invoca Patch - check that file exists and load file
           File.exists?(file) or abort %{#{file} doesn't exist yet. Run "rake db:migrate" to create it then try again. If you do not intend to use a database, you should instead alter #{Rails.root}/config/boot.rb to limit the frameworks that will be loaded}
-          command = "mysql '-u#{config["username"]}' '-p#{config["password"]}' '#{config["database"]}' < '#{file}'"
+          command = "mysql '-u#{configuration["username"]}' '-p#{configuration["password"]}' '#{configuration["database"]}' < '#{file}'"
           puts command if ENV['verbose'] != 'false'
           system( command )
           $?.success? or raise "load_schema_for failed executing `#{command}`"
