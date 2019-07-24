@@ -80,10 +80,15 @@ module ActiveRecord
         return false if @attribute_methods_generated
         # Use a mutex; we don't want two threads simultaneously trying to define
         # attribute methods.
+
+        # TECH-2803: load the column_names before entering the mutex, since with em_mysql2, the columns method
+        # will block when it reads from SQL and yield the fiber, then the next fiber that schedules may wind
+        # up right back here and try to re-enter the mutex...which will raise ThreadError: deadlock; recursive locking
+        col_names = column_names
         generated_attribute_methods.synchronize do
           return false if @attribute_methods_generated
           superclass.define_attribute_methods unless self == base_class
-          super(column_names)
+          super(col_names)
           @attribute_methods_generated = true
         end
         true
