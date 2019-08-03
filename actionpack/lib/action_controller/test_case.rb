@@ -274,6 +274,12 @@ module ActionController
 
   class TestResponse < ActionDispatch::TestResponse
     def recycle!
+
+      # patch from https://github.com/rails/rails/issues/34790
+      # hack to avoid MonitorMixin double-initialize error:
+      @mon_mutex_owner_object_id = nil
+      @mon_mutex = nil
+
       initialize
     end
   end
@@ -281,6 +287,12 @@ module ActionController
   class LiveTestResponse < Live::Response
     def recycle!
       @body = nil
+
+      # patch from https://github.com/rails/rails/issues/34790
+      # hack to avoid MonitorMixin double-initialize error:
+      @mon_mutex_owner_object_id = nil
+      @mon_mutex = nil
+
       initialize
     end
 
