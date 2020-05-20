@@ -8,9 +8,10 @@ module Rails
     MAJOR = 4
     MINOR = 2
     TINY  = 11
-    PRE   = "1"
-    COMPANY = "Invoca"
+    PRE   = "3"
 
     STRING = [MAJOR, MINOR, TINY, PRE].compact.join(".")
+
+    COMPANY = "Invoca"
   end
 end
